@@ -400,3 +400,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 answer*.md
+log*.md
