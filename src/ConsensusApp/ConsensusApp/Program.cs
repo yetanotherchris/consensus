@@ -1,5 +1,6 @@
-using Spectre.Console;
 using Spectre.Console.Cli;
+using Spectre.Console;
+using Microsoft.Extensions.Logging;
 
 namespace ConsensusApp;
 
@@ -13,7 +14,10 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var prompt = settings.Prompt ?? AnsiConsole.Ask<string>("Enter your question:");
+        var console = new SpectreConsoleService();
+        ILogger<ConsensusCommand> logger = new AnsiConsoleLogger<ConsensusCommand>();
+
+        var prompt = settings.Prompt ?? console.Ask<string>("Enter your question:");
 
         var suggestions = new[]
         {
@@ -25,7 +29,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
             "deepseek/deepseek-r1-0528:free"
         };
 
-        var models = AnsiConsole.Prompt(
+        var models = console.Prompt(
             new MultiSelectionPrompt<string>()
                 .Title("Select LLMs in the order to consult")
                 .InstructionsText("[grey](Press <space> to toggle a model, <enter> to accept)[/]")
@@ -33,14 +37,14 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
 
         if (models.Count == 0)
         {
-            AnsiConsole.MarkupLine("[red]No models selected.[/]");
+            logger.LogError("No models selected.");
             return 1;
         }
 
         var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY") ??
-            AnsiConsole.Prompt(new TextPrompt<string>("Enter your OpenRouter API key:").Secret());
+            console.Prompt(new TextPrompt<string>("Enter your OpenRouter API key:").Secret());
 
-        var logChoice = AnsiConsole.Prompt(
+        var logChoice = console.Prompt(
             new SelectionPrompt<string>()
                 .Title("Enable logging of intermediate responses?")
                 .AddChoices("None", "Minimal", "Full"));
@@ -53,15 +57,15 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
         };
 
         var client = new OpenRouterClient(apiKey);
-        var processor = new ConsensusProcessor(client);
+        var processor = new ConsensusProcessor(client, console);
 
         var result = await processor.RunAsync(prompt, models, logLevel);
 
-        AnsiConsole.MarkupLine($"[bold yellow]Summary:[/] {result.Summary}");
-        AnsiConsole.MarkupLine($"Full answer written to [green]{result.Path}[/]");
+        logger.LogInformation("Summary: {Summary}", result.Summary);
+        logger.LogInformation("Full answer written to {Path}", result.Path);
         if (result.LogPath is not null)
         {
-            AnsiConsole.MarkupLine($"Log written to [green]{result.LogPath}[/]");
+            logger.LogInformation("Log written to {Path}", result.LogPath);
         }
 
         return 0;

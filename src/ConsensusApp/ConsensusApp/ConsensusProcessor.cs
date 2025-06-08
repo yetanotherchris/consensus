@@ -11,10 +11,12 @@ namespace ConsensusApp;
 internal sealed class ConsensusProcessor
 {
     private readonly OpenRouterClient _client;
+    private readonly IConsoleService _console;
 
-    public ConsensusProcessor(OpenRouterClient client)
+    public ConsensusProcessor(OpenRouterClient client, IConsoleService console)
     {
         _client = client;
+        _console = console;
     }
 
     public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel)
@@ -26,8 +28,7 @@ internal sealed class ConsensusProcessor
 
         foreach (var model in models)
         {
-            await AnsiConsole.Status()
-                .StartAsync($"Querying [green]{model}[/]", async _ =>
+            await _console.StatusAsync("Querying {0}", model, async () =>
                 {
                     List<ChatMessage> messages;
                     if (answer == prompt)
@@ -96,8 +97,7 @@ internal sealed class ConsensusProcessor
     private async Task<string> SummarizeAsync(string model, string answer)
     {
         string summary = string.Empty;
-        await AnsiConsole.Status()
-            .StartAsync("Summarizing final answer", async _ =>
+        await _console.StatusAsync("Summarizing final answer", async () =>
             {
                 summary = await _client.QueryAsync(model, new ChatMessage[]
                 {
@@ -112,8 +112,7 @@ internal sealed class ConsensusProcessor
     private async Task<string> SummarizeChangesAsync(string model, string answer)
     {
         string summary = string.Empty;
-        await AnsiConsole.Status()
-            .StartAsync($"Summarizing response from {model}", async _ =>
+        await _console.StatusAsync("Summarizing response from {0}", model, async () =>
             {
                 summary = await _client.QueryAsync(model, new ChatMessage[]
                 {
