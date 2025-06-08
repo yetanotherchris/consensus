@@ -25,6 +25,7 @@ internal sealed class ConsensusProcessor
         string previousModel = string.Empty;
         var logBuilder = logLevel == LogLevel.None ? null : new System.Text.StringBuilder();
         string logPath = string.Empty;
+        var results = new List<ModelResult>();
 
         var queue = new ModelQueue(models, _client, _console);
         while (queue.HasNext)
@@ -39,10 +40,22 @@ internal sealed class ConsensusProcessor
 
             previousModel = result.Model;
             answer = result.Answer;
+            results.Add(result);
         }
 
         if (logBuilder is not null)
         {
+            if (results.Count > 0)
+            {
+                logBuilder.AppendLine("## Summaries for Consensus");
+                foreach (var r in results)
+                {
+                    logBuilder.AppendLine($"### {r.Model}");
+                    logBuilder.AppendLine(r.SummaryForConsensus);
+                    logBuilder.AppendLine();
+                }
+            }
+
             logPath = Path.Combine(Directory.GetCurrentDirectory(), $"log_{DateTime.Now:yyyyMMddHHmmss}.md");
             await File.WriteAllTextAsync(logPath, logBuilder.ToString());
         }
