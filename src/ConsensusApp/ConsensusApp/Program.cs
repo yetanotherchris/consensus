@@ -25,7 +25,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
             "openai/gpt-4o",
             "meta-llama/llama-4-maverick:free",
             "anthropic/claude-3.7-sonnet",
-            "grok-3",
+            "x-ai/grok-3-beta",
             "google/gemini-2.0-flash-001",
             "deepseek/deepseek-r1-0528:free"
         };
