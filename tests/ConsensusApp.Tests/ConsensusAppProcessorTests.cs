@@ -97,6 +97,46 @@ public class ConsensusProcessorTests
         }
     }
 
+    [Fact]
+    public async Task RunAsync_EmptyResponse_IsIgnored()
+    {
+        var responses = new Queue<string>(new[]
+        {
+            " ",
+            "<InitialResponse>Answer2</InitialResponse><ChangesSummary>No changes as it's the first response.</ChangesSummary><InitialResponseSummary>Summary2</InitialResponseSummary>",
+            "<ChangesSummary>Final summary</ChangesSummary>"
+        });
+
+        var stub = new StubChatClient(responses);
+        var client = new ConsensusApp.OpenRouterClient(stub);
+        var console = new StubConsoleService();
+        var processor = new ConsensusApp.ConsensusProcessor(client, console, NullLogger<ConsensusApp.ConsensusProcessor>.Instance);
+
+        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempDir);
+        var originalDir = Directory.GetCurrentDirectory();
+        Directory.SetCurrentDirectory(tempDir);
+
+        try
+        {
+            var result = await processor.RunAsync("Prompt", new[] { "model1", "model2" }, ConsensusApp.LogLevel.Minimal);
+
+            Assert.Equal(3, stub.Requests.Count);
+
+            var answer = File.ReadAllText(result.Path);
+            Assert.Equal("## Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
+
+            var log = File.ReadAllText(result.LogPath!);
+            var expectedLog = "# model2\nSummary2\n\nNo changes as it's the first response.\n\n### Change Summaries\n#### model2\nNo changes as it's the first response.\n\n";
+            Assert.Equal(expectedLog, log);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+            Directory.Delete(tempDir, true);
+        }
+    }
+
     private sealed class StubConsoleService : ConsensusApp.IConsoleService
     {
         public T Ask<T>(string prompt) => throw new NotImplementedException();

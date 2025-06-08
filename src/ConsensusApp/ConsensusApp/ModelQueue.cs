@@ -56,6 +56,11 @@ internal sealed class ModelQueue
             answer = await _client.QueryAsync(model, messages);
         });
 
+        if (string.IsNullOrWhiteSpace(answer))
+        {
+            return new ModelResult(model, string.Empty, string.Empty, null);
+        }
+
         string changeSummary;
         string? initialSummary = null;
         if (previousModel == string.Empty)
