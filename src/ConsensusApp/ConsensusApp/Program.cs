@@ -16,6 +16,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
     {
         var console = new SpectreConsoleService();
         ILogger<ConsensusCommand> logger = new AnsiConsoleLogger<ConsensusCommand>();
+        ILogger<ConsensusProcessor> processorLogger = new AnsiConsoleLogger<ConsensusProcessor>();
 
         var prompt = settings.Prompt ?? console.Ask<string>("Enter your question:");
 
@@ -57,7 +58,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
         };
 
         var client = new OpenRouterClient(apiKey);
-        var processor = new ConsensusProcessor(client, console);
+        var processor = new ConsensusProcessor(client, console, processorLogger);
 
         var result = await processor.RunAsync(prompt, models, logLevel);
 

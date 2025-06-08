@@ -11,10 +11,6 @@ internal sealed class ModelQueue
     private readonly Queue<string> _models;
     private readonly OpenRouterClient _client;
     private readonly IConsoleService _console;
-    private static readonly string InitialSystemPrompt =
-        ResourceHelper.GetString("ConsensusApp.Resources.InitialSystemPrompt.txt");
-    private static readonly string FollowupSystemPrompt =
-        ResourceHelper.GetString("ConsensusApp.Resources.FollowupSystemPrompt.txt");
 
     public ModelQueue(IEnumerable<string> models, OpenRouterClient client, IConsoleService console)
     {
@@ -43,7 +39,7 @@ internal sealed class ModelQueue
             {
                 messages = new()
                 {
-                    ChatMessage.CreateSystemMessage(InitialSystemPrompt),
+                    ChatMessage.CreateSystemMessage(Prompts.InitialSystemPrompt),
                     ChatMessage.CreateUserMessage(prompt)
                 };
             }
@@ -51,7 +47,7 @@ internal sealed class ModelQueue
             {
                 messages = new()
                 {
-                    ChatMessage.CreateSystemMessage(string.Format(FollowupSystemPrompt, previousModel)),
+                    ChatMessage.CreateSystemMessage(string.Format(Prompts.FollowupSystemPrompt, previousModel)),
                     ChatMessage.CreateUserMessage(answer)
                 };
             }
@@ -60,35 +56,32 @@ internal sealed class ModelQueue
             summaryForConsensus = ExtractConsensusSummary(answer);
         });
 
+        string changeSummary;
+        if (previousModel == string.Empty)
+        {
+            changeSummary = "Initial answer generated.";
+        }
+        else
+        {
+            changeSummary = await summarizeChanges(model, answer);
+        }
+
         if (logBuilder is not null)
         {
+            logBuilder.AppendLine($"### {model}");
             if (logLevel == LogLevel.Full)
             {
-                logBuilder.AppendLine($"### {model}");
                 logBuilder.AppendLine(answer);
                 logBuilder.AppendLine();
                 logBuilder.AppendLine("-----------");
                 logBuilder.AppendLine();
             }
-            else if (logLevel == LogLevel.Minimal)
-            {
-                string summary;
-                if (previousModel == string.Empty)
-                {
-                    summary = "Initial answer generated.";
-                }
-                else
-                {
-                    summary = await summarizeChanges(model, answer);
-                }
 
-                logBuilder.AppendLine($"### {model}");
-                logBuilder.AppendLine(summary.Trim());
-                logBuilder.AppendLine();
-            }
+            logBuilder.AppendLine(changeSummary.Trim());
+            logBuilder.AppendLine();
         }
 
-        return new ModelResult(model, answer, summaryForConsensus);
+        return new ModelResult(model, answer, summaryForConsensus, changeSummary.Trim());
     }
 
     private static string ExtractConsensusSummary(string answer)
@@ -105,4 +98,4 @@ internal sealed class ModelQueue
     }
 }
 
-internal sealed record ModelResult(string Model, string Answer, string SummaryForConsensus);
+internal sealed record ModelResult(string Model, string Answer, string SummaryForConsensus, string ChangeSummary);

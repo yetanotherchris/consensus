@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenAI.Chat;
+using Microsoft.Extensions.Logging;
 using Spectre.Console;
 
 namespace ConsensusApp;
@@ -12,11 +13,13 @@ internal sealed class ConsensusProcessor
 {
     private readonly OpenRouterClient _client;
     private readonly IConsoleService _console;
+    private readonly ILogger<ConsensusProcessor> _logger;
 
-    public ConsensusProcessor(OpenRouterClient client, IConsoleService console)
+    public ConsensusProcessor(OpenRouterClient client, IConsoleService console, ILogger<ConsensusProcessor> logger)
     {
         _client = client;
         _console = console;
+        _logger = logger;
     }
 
     public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel)
@@ -41,6 +44,8 @@ internal sealed class ConsensusProcessor
             previousModel = result.Model;
             answer = result.Answer;
             results.Add(result);
+
+            _logger.LogInformation("{Model} change summary: {Summary}", result.Model, result.ChangeSummary);
         }
 
         var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILES") is not null;
@@ -94,9 +99,7 @@ internal sealed class ConsensusProcessor
             {
                 summary = await _client.QueryAsync(model, new ChatMessage[]
                 {
-                    ChatMessage.CreateSystemMessage(
-                        "Summarize the changes you made compared to the previous answer. " +
-                        "List pros and cons as well as agreements and disagreements in one short paragraph."),
+                    ChatMessage.CreateSystemMessage(Prompts.ChangeSummarySystemPrompt),
                     ChatMessage.CreateUserMessage(answer)
                 });
             });
