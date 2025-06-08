@@ -1,28 +1,22 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using OpenAI;
 using OpenAI.Chat;
-using System.ClientModel;
 
 namespace ConsensusApp;
 
 internal sealed class OpenRouterClient
 {
-    private readonly string _apiKey;
-    private readonly OpenAIClientOptions _options = new() { Endpoint = new Uri("https://openrouter.ai/api/v1") };
+    private readonly IChatClient _client;
 
-    public OpenRouterClient(string apiKey)
+    public OpenRouterClient(string apiKey) : this(new OpenAIChatClient(apiKey))
     {
-        _apiKey = apiKey;
     }
 
-    public async Task<string> QueryAsync(string model, IEnumerable<ChatMessage> messages)
+    internal OpenRouterClient(IChatClient client)
     {
-        var credential = new ApiKeyCredential(_apiKey);
-        var client = new ChatClient(model, credential, _options);
-        var completion = await client.CompleteChatAsync(messages);
-        return string.Join("\n", completion.Value.Content.Select(p => p.Text));
+        _client = client;
     }
+
+    public Task<string> QueryAsync(string model, IEnumerable<ChatMessage> messages)
+        => _client.CompleteChatAsync(model, messages);
 }

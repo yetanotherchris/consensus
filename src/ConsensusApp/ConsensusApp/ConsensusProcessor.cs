@@ -91,7 +91,7 @@ internal sealed class ConsensusProcessor
         return new(path, summary, logPath == string.Empty ? null : logPath);
     }
 
-    private async Task<string> SummarizeChangesAsync(string model, string answer)
+    private async Task<string> SummarizeChangesAsync(string model, string answer, string previousAnswer)
     {
         string summary = string.Empty;
         await _console.StatusAsync("Summarizing response from {0}", model, async () =>
@@ -99,7 +99,8 @@ internal sealed class ConsensusProcessor
                 summary = await _client.QueryAsync(model, new ChatMessage[]
                 {
                     ChatMessage.CreateSystemMessage(Prompts.ChangeSummarySystemPrompt),
-                    ChatMessage.CreateUserMessage(answer)
+                    ChatMessage.CreateUserMessage(ResponseParser.GetRevisedAnswer(previousAnswer)),
+                    ChatMessage.CreateAssistantMessage(ResponseParser.GetRevisedAnswer(answer))
                 });
             });
 
