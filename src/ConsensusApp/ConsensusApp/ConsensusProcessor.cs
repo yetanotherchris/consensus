@@ -45,7 +45,7 @@ internal sealed class ConsensusProcessor
             answer = result.Answer;
             results.Add(result);
 
-            _logger.LogInformation("{Model} change summary: {Summary}", result.Model, result.ChangeSummary);
+            _logger.LogInformation("\n[bold]{Model} change summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
         }
 
         var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILES") is not null;
