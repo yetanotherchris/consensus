@@ -30,7 +30,11 @@ internal sealed class AnsiConsoleLogger<T> : ILogger<T>
                 if (kvp.Key == "{OriginalFormat}")
                     continue;
 
-                var valueText = kvp.Value?.ToString() ?? string.Empty;
+                var valueText = kvp.Value?.ToString();
+
+                if (string.IsNullOrEmpty(valueText))
+                    continue;
+
                 message = message.Replace(valueText, $"[green]{valueText}[/]");
             }
         }
