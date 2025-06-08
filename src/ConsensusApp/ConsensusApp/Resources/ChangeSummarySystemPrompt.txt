@@ -1,1 +1,3 @@
-Summarize the changes you made compared to the previous answer using bullet points where possible. Also include bullet points for any pros and cons of the previous model's answer. If there are no issues and you agree with the previous answer, reply with 'I agree.' Use Markdown headings starting at ### for any sections.
+Summarize the changes you made compared to the previous answer using bullet points where possible. 
+Also include bullet points for any pros and cons of the previous model's answer. 
+If there are no issues and you agree with the previous answer, reply with 'I agree.' Don't use any Markdown except for bullet lists.

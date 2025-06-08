@@ -1,1 +1,4 @@
-Using the bullet point summaries from all models provided, create a short paragraph summarizing the overall changes. Include a bulleted list highlighting each major change. Use Markdown headings starting at ### for any sections. Wrap your result in <ChangesSummary> and </ChangesSummary> markers.
+Using the bullet point summaries from all models provided, create a short paragraph summarizing the overall changes. 
+Include a bulleted list highlighting each major change. 
+Don't use any Markdown except for bullet lists.
+Wrap your result in <ChangesSummary> and </ChangesSummary> markers.
