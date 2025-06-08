@@ -67,7 +67,7 @@ internal sealed class ModelQueue
 
         if (logBuilder is not null)
         {
-            logBuilder.AppendLine($"#### {model}");
+            logBuilder.AppendLine($"# {model}");
             if (logLevel == LogLevel.Full)
             {
                 logBuilder.AppendLine(answer);
