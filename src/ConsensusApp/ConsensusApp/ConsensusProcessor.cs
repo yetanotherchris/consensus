@@ -43,6 +43,12 @@ internal sealed class ConsensusProcessor
                 logBuilder,
                 SummarizeChangesAsync);
 
+            if (string.IsNullOrWhiteSpace(result.Answer))
+            {
+                _logger.LogWarning("Empty response from {Model}, skipping.", result.Model);
+                continue;
+            }
+
             previousModel = result.Model;
             answer = result.Answer;
             results.Add(result);
