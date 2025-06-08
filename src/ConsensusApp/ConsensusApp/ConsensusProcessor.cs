@@ -51,7 +51,7 @@ internal sealed class ConsensusProcessor
         var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILES") is not null;
         var baseName = uniqueFiles
             ? DateTime.Now.ToString("yyyyMMddHHmmss")
-            : SanitizeFileName(prompt);
+            : SanitizeFileName(prompt).ToLowerInvariant();
 
         if (logBuilder is not null)
         {
