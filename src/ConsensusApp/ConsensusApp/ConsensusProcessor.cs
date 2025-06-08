@@ -82,7 +82,8 @@ internal sealed class ConsensusProcessor
         }
 
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
-        await File.WriteAllTextAsync(path, answer);
+        var finalAnswer = ExtractRevisedAnswer(answer);
+        await File.WriteAllTextAsync(path, finalAnswer);
 
         var summary = await GenerateFinalChangesSummaryAsync(previousModel, results);
         return new(path, summary, logPath == string.Empty ? null : logPath);
@@ -130,6 +131,14 @@ internal sealed class ConsensusProcessor
             .Take(10)
             .Select(c => char.IsWhiteSpace(c) || invalid.Contains(c) ? '_' : c)
             .ToArray());
+    }
+
+    private static string ExtractRevisedAnswer(string answer)
+    {
+        var parser = new AngleSharp.Html.Parser.HtmlParser();
+        var document = parser.ParseDocument(answer);
+        var element = document.QuerySelector("RevisedAnswer") ?? document.QuerySelector("InitialResponse");
+        return element?.TextContent.Trim() ?? answer;
     }
 }
 
