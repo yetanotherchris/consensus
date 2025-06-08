@@ -27,10 +27,11 @@ internal sealed class ModelQueue
         string previousModel,
         LogLevel logLevel,
         StringBuilder? logBuilder,
-        Func<string, string, Task<string>> summarizeChanges)
+        Func<string, string, string, Task<string>> summarizeChanges)
     {
         var model = _models.Dequeue();
 
+        string previousAnswer = answer;
         await _console.StatusAsync("Querying {0}", model, async () =>
         {
             List<ChatMessage> messages;
@@ -68,7 +69,7 @@ internal sealed class ModelQueue
         }
         else
         {
-            changeSummary = await summarizeChanges(model, answer);
+            changeSummary = await summarizeChanges(model, answer, previousAnswer);
         }
 
         if (logBuilder is not null)
