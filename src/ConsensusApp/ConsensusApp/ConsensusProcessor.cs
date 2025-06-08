@@ -17,10 +17,12 @@ internal sealed class ConsensusProcessor
         _client = client;
     }
 
-    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models)
+    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel)
     {
         string answer = prompt;
         string previousModel = string.Empty;
+        var logBuilder = logLevel == LogLevel.None ? null : new System.Text.StringBuilder();
+        string logPath = string.Empty;
 
         foreach (var model in models)
         {
@@ -45,15 +47,50 @@ internal sealed class ConsensusProcessor
                     }
 
                     answer = await _client.QueryAsync(model, messages);
+
+                    if (logBuilder is not null)
+                    {
+                        if (logLevel == LogLevel.Full)
+                        {
+                            logBuilder.AppendLine($"### {model}");
+                            logBuilder.AppendLine(answer);
+                            logBuilder.AppendLine();
+                            logBuilder.AppendLine("-----------");
+                            logBuilder.AppendLine();
+                        }
+                        else if (logLevel == LogLevel.Minimal)
+                        {
+                            string summary;
+                            if (previousModel == string.Empty)
+                            {
+                                summary = "Initial answer generated.";
+                            }
+                            else
+                            {
+                                summary = await SummarizeChangesAsync(model, answer);
+                            }
+
+                            logBuilder.AppendLine($"### {model}");
+                            logBuilder.AppendLine(summary.Trim());
+                            logBuilder.AppendLine();
+                        }
+                    }
+
                     previousModel = model;
                 });
+        }
+
+        if (logBuilder is not null)
+        {
+            logPath = Path.Combine(Directory.GetCurrentDirectory(), $"log_{DateTime.Now:yyyyMMddHHmmss}.md");
+            await File.WriteAllTextAsync(logPath, logBuilder.ToString());
         }
 
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{DateTime.Now:yyyyMMddHHmmss}.md");
         await File.WriteAllTextAsync(path, answer);
 
         var summary = await SummarizeAsync(models.Last(), answer);
-        return new(path, summary);
+        return new(path, summary, logPath == string.Empty ? null : logPath);
     }
 
     private async Task<string> SummarizeAsync(string model, string answer)
@@ -71,6 +108,24 @@ internal sealed class ConsensusProcessor
 
         return summary.Split('\n').FirstOrDefault() ?? string.Empty;
     }
+
+    private async Task<string> SummarizeChangesAsync(string model, string answer)
+    {
+        string summary = string.Empty;
+        await AnsiConsole.Status()
+            .StartAsync($"Summarizing response from {model}", async _ =>
+            {
+                summary = await _client.QueryAsync(model, new ChatMessage[]
+                {
+                    ChatMessage.CreateSystemMessage(
+                        "Summarize the changes you made compared to the previous answer. " +
+                        "List pros and cons as well as agreements and disagreements in one short paragraph."),
+                    ChatMessage.CreateUserMessage(answer)
+                });
+            });
+
+        return summary.Split('\n').FirstOrDefault() ?? string.Empty;
+    }
 }
 
-internal sealed record ConsensusResult(string Path, string Summary);
+internal sealed record ConsensusResult(string Path, string Summary, string? LogPath);

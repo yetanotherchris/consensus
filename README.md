@@ -15,3 +15,5 @@ dotnet run --project src/ConsensusApp/ConsensusApp -- "your question here"
 ```
 
 The program will prompt you for models and your OpenRouter API key if not provided in the `OPENROUTER_API_KEY` environment variable.
+
+You can optionally create a markdown log file of each model's response. When prompted, choose `Minimal` to log short summaries of each model's changes or `Full` to store every response separated by `-----------` lines.

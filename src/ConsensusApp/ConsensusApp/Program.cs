@@ -40,13 +40,29 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
         var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY") ??
             AnsiConsole.Prompt(new TextPrompt<string>("Enter your OpenRouter API key:").Secret());
 
+        var logChoice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Enable logging of intermediate responses?")
+                .AddChoices("None", "Minimal", "Full"));
+
+        var logLevel = logChoice switch
+        {
+            "Minimal" => LogLevel.Minimal,
+            "Full" => LogLevel.Full,
+            _ => LogLevel.None
+        };
+
         var client = new OpenRouterClient(apiKey);
         var processor = new ConsensusProcessor(client);
 
-        var result = await processor.RunAsync(prompt, models);
+        var result = await processor.RunAsync(prompt, models, logLevel);
 
         AnsiConsole.MarkupLine($"[bold yellow]Summary:[/] {result.Summary}");
         AnsiConsole.MarkupLine($"Full answer written to [green]{result.Path}[/]");
+        if (result.LogPath is not null)
+        {
+            AnsiConsole.MarkupLine($"Log written to [green]{result.LogPath}[/]");
+        }
 
         return 0;
     }
