@@ -80,11 +80,13 @@ internal sealed class ConsensusProcessor
             await File.WriteAllTextAsync(logPath, logBuilder.ToString());
         }
 
+        var summary = await GenerateFinalChangesSummaryAsync(previousModel, results);
+
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         var finalAnswer = ExtractRevisedAnswer(answer);
-        await File.WriteAllTextAsync(path, finalAnswer);
+        var fileContent = $"## Answer\n\n{finalAnswer}\n\n## Changes Summary\n\n{summary}\n";
+        await File.WriteAllTextAsync(path, fileContent);
 
-        var summary = await GenerateFinalChangesSummaryAsync(previousModel, results);
         return new(path, summary, logPath == string.Empty ? null : logPath);
     }
 

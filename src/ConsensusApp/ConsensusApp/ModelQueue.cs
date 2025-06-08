@@ -58,7 +58,11 @@ internal sealed class ModelQueue
         string changeSummary;
         if (previousModel == string.Empty)
         {
-            changeSummary = ResponseParser.GetInitialResponseSummary(answer);
+            changeSummary = ResponseParser.GetChangesSummary(answer);
+            if (string.IsNullOrEmpty(changeSummary))
+            {
+                changeSummary = "No changes as it's the first response.";
+            }
         }
         else
         {
