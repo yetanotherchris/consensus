@@ -26,6 +26,7 @@ internal sealed class ConsensusProcessor
     {
         string answer = prompt;
         string previousModel = string.Empty;
+        string firstSummary = string.Empty;
         var logBuilder = logLevel == LogLevel.None ? null : new System.Text.StringBuilder();
         string logPath = string.Empty;
         var results = new List<ModelResult>();
@@ -44,6 +45,11 @@ internal sealed class ConsensusProcessor
             previousModel = result.Model;
             answer = result.Answer;
             results.Add(result);
+
+            if (string.IsNullOrEmpty(firstSummary))
+            {
+                firstSummary = result.SummaryForConsensus;
+            }
 
             _logger.LogInformation("\n[bold]{Model} change summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
         }
@@ -73,23 +79,8 @@ internal sealed class ConsensusProcessor
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         await File.WriteAllTextAsync(path, answer);
 
-        var summary = await SummarizeAsync(previousModel, answer);
+        var summary = firstSummary;
         return new(path, summary, logPath == string.Empty ? null : logPath);
-    }
-
-    private async Task<string> SummarizeAsync(string model, string answer)
-    {
-        string summary = string.Empty;
-        await _console.StatusAsync("Summarizing final answer", async () =>
-            {
-                summary = await _client.QueryAsync(model, new ChatMessage[]
-                {
-                    ChatMessage.CreateSystemMessage("Summarize the following answer in one short paragraph."),
-                    ChatMessage.CreateUserMessage(answer)
-                });
-            });
-
-        return summary.Split('\n').FirstOrDefault() ?? string.Empty;
     }
 
     private async Task<string> SummarizeChangesAsync(string model, string answer)
