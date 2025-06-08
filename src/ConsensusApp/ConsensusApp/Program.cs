@@ -62,7 +62,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
 
         var result = await processor.RunAsync(prompt, models, logLevel);
 
-        logger.LogInformation("\n[bold]Summary:[/]\n{Summary}\n", result.Summary);
+        logger.LogInformation("\n[bold]Changes Summary:[/]\n{Summary}\n", result.ChangesSummary);
         logger.LogInformation("[bold]Full answer written to:[/]\n{Path}\n", result.Path);
         if (result.LogPath is not null)
         {

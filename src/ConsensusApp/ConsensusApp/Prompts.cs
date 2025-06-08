@@ -8,4 +8,6 @@ internal static class Prompts
         ResourceHelper.GetString("ConsensusApp.Resources.FollowupSystemPrompt.txt");
     public static readonly string ChangeSummarySystemPrompt =
         ResourceHelper.GetString("ConsensusApp.Resources.ChangeSummarySystemPrompt.txt");
+    public static readonly string FinalChangesSummaryPrompt =
+        ResourceHelper.GetString("ConsensusApp.Resources.FinalChangesSummaryPrompt.txt");
 }
