@@ -1,2 +1,3 @@
-Provide your answer inside `<RevisedAnswer>` and `</RevisedAnswer>` markers.
-After answering, include your summary inside `<ConsensusSummary>` and `</ConsensusSummary>` markers.
+Provide your answer inside `<InitialResponse>` and `</InitialResponse>` markers.
+After answering, include a short summary of your response inside `<InitialResponseSummary>` and `</InitialResponseSummary>` markers.
+Finally, include your summary for consensus inside `<ConsensusSummary>` and `</ConsensusSummary>` markers.

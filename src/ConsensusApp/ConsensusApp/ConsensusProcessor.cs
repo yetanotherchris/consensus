@@ -34,6 +34,8 @@ internal sealed class ConsensusProcessor
         var queue = new ModelQueue(models, _client, _console);
         while (queue.HasNext)
         {
+            bool firstModel = string.IsNullOrEmpty(previousModel);
+
             var result = await queue.PopAsync(
                 prompt,
                 answer,
@@ -51,7 +53,15 @@ internal sealed class ConsensusProcessor
                 firstSummary = result.SummaryForConsensus;
             }
 
-            _logger.LogInformation("\n[bold]{Model} change summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
+            if (firstModel)
+            {
+                _console.MarkupLine("Initial answer generated.");
+                _logger.LogInformation("\n[bold]{Model} answer summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
+            }
+            else
+            {
+                _logger.LogInformation("\n[bold]{Model} change summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
+            }
         }
 
         var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILENAMES") is not null;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using AngleSharp.Html.Parser;
 using OpenAI.Chat;
 
 namespace ConsensusApp;
@@ -11,6 +12,7 @@ internal sealed class ModelQueue
     private readonly Queue<string> _models;
     private readonly OpenRouterClient _client;
     private readonly IConsoleService _console;
+    private static readonly HtmlParser Parser = new();
 
     public ModelQueue(IEnumerable<string> models, OpenRouterClient client, IConsoleService console)
     {
@@ -60,7 +62,7 @@ internal sealed class ModelQueue
         string changeSummary;
         if (previousModel == string.Empty)
         {
-            changeSummary = "Initial answer generated.";
+            changeSummary = ExtractInitialResponseSummary(answer);
         }
         else
         {
@@ -87,44 +89,28 @@ internal sealed class ModelQueue
 
     private static string ExtractConsensusSummary(string answer)
     {
-        const string startMarker = "<ConsensusSummary>";
-        const string endMarker = "</ConsensusSummary>";
-
-        var start = answer.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
-        if (start == -1)
-        {
-            return string.Empty;
-        }
-
-        start += startMarker.Length;
-        var end = answer.IndexOf(endMarker, start, StringComparison.OrdinalIgnoreCase);
-        if (end == -1)
-        {
-            end = answer.Length;
-        }
-
-        return answer[start..end].Trim();
+        var document = Parser.ParseDocument(answer);
+        return document.QuerySelector("ConsensusSummary")?.TextContent.Trim() ?? string.Empty;
     }
 
     private static string ExtractRevisedAnswer(string answer)
     {
-        const string startMarker = "<RevisedAnswer>";
-        const string endMarker = "</RevisedAnswer>";
+        var document = Parser.ParseDocument(answer);
+        var element = document.QuerySelector("RevisedAnswer") ?? document.QuerySelector("InitialResponse");
+        return element?.TextContent.Trim() ?? answer;
+    }
 
-        var start = answer.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
-        if (start == -1)
-        {
-            return answer;
-        }
+    private static string ExtractInitialResponseSummary(string answer)
+    {
+        var document = Parser.ParseDocument(answer);
+        return document.QuerySelector("InitialResponseSummary")?.TextContent.Trim() ?? string.Empty;
+    }
 
-        start += startMarker.Length;
-        var end = answer.IndexOf(endMarker, start, StringComparison.OrdinalIgnoreCase);
-        if (end == -1)
-        {
-            end = answer.Length;
-        }
-
-        return answer[start..end].Trim();
+    private static string ExtractInitialResponse(string answer)
+    {
+        var document = Parser.ParseDocument(answer);
+        var element = document.QuerySelector("InitialResponse");
+        return element?.TextContent.Trim() ?? answer;
     }
 }
 
