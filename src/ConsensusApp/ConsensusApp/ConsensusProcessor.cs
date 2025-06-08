@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using AngleSharp.Html.Parser;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -26,7 +27,6 @@ internal sealed class ConsensusProcessor
     {
         string answer = prompt;
         string previousModel = string.Empty;
-        string firstSummary = string.Empty;
         var logBuilder = logLevel == LogLevel.None ? null : new System.Text.StringBuilder();
         string logPath = string.Empty;
         var results = new List<ModelResult>();
@@ -48,11 +48,6 @@ internal sealed class ConsensusProcessor
             answer = result.Answer;
             results.Add(result);
 
-            if (string.IsNullOrEmpty(firstSummary))
-            {
-                firstSummary = result.SummaryForConsensus;
-            }
-
             if (firstModel)
             {
                 _console.MarkupLine("Initial answer generated.");
@@ -73,11 +68,11 @@ internal sealed class ConsensusProcessor
         {
             if (results.Count > 0)
             {
-                logBuilder.AppendLine("## Summaries for Consensus");
+                logBuilder.AppendLine("## Change Summaries");
                 foreach (var r in results)
                 {
                     logBuilder.AppendLine($"### {r.Model}");
-                    logBuilder.AppendLine(r.SummaryForConsensus);
+                    logBuilder.AppendLine(r.ChangeSummary);
                     logBuilder.AppendLine();
                 }
             }
@@ -89,7 +84,7 @@ internal sealed class ConsensusProcessor
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         await File.WriteAllTextAsync(path, answer);
 
-        var summary = firstSummary;
+        var summary = await GenerateFinalChangesSummaryAsync(previousModel, results);
         return new(path, summary, logPath == string.Empty ? null : logPath);
     }
 
@@ -108,6 +103,26 @@ internal sealed class ConsensusProcessor
         return summary.Split('\n').FirstOrDefault() ?? string.Empty;
     }
 
+    private async Task<string> GenerateFinalChangesSummaryAsync(string model, IEnumerable<ModelResult> results)
+    {
+        string combined = string.Join(
+            "\n------\n",
+            results.Select(r => $"Model: {r.Model}\n{r.ChangeSummary}"));
+        string summary = string.Empty;
+        await _console.StatusAsync("Generating final summary with {0}", model, async () =>
+            {
+                summary = await _client.QueryAsync(model, new ChatMessage[]
+                {
+                    ChatMessage.CreateSystemMessage(Prompts.FinalChangesSummaryPrompt),
+                    ChatMessage.CreateUserMessage(combined)
+                });
+            });
+
+        var parser = new AngleSharp.Html.Parser.HtmlParser();
+        var doc = parser.ParseDocument(summary);
+        return doc.QuerySelector("ChangesSummary")?.TextContent.Trim() ?? summary.Trim();
+    }
+
     private static string SanitizeFileName(string text)
     {
         var invalid = Path.GetInvalidFileNameChars();
@@ -118,4 +133,4 @@ internal sealed class ConsensusProcessor
     }
 }
 
-internal sealed record ConsensusResult(string Path, string Summary, string? LogPath);
+internal sealed record ConsensusResult(string Path, string ChangesSummary, string? LogPath);

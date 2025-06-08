@@ -33,7 +33,6 @@ internal sealed class ModelQueue
     {
         var model = _models.Dequeue();
 
-        string summaryForConsensus = string.Empty;
         await _console.StatusAsync("Querying {0}", model, async () =>
         {
             List<ChatMessage> messages;
@@ -56,7 +55,6 @@ internal sealed class ModelQueue
             }
 
             answer = await _client.QueryAsync(model, messages);
-            summaryForConsensus = ExtractConsensusSummary(answer);
         });
 
         string changeSummary;
@@ -84,13 +82,7 @@ internal sealed class ModelQueue
             logBuilder.AppendLine();
         }
 
-        return new ModelResult(model, answer, summaryForConsensus, changeSummary.Trim());
-    }
-
-    private static string ExtractConsensusSummary(string answer)
-    {
-        var document = Parser.ParseDocument(answer);
-        return document.QuerySelector("ConsensusSummary")?.TextContent.Trim() ?? string.Empty;
+        return new ModelResult(model, answer, changeSummary.Trim());
     }
 
     private static string ExtractRevisedAnswer(string answer)
@@ -114,4 +106,4 @@ internal sealed class ModelQueue
     }
 }
 
-internal sealed record ModelResult(string Model, string Answer, string SummaryForConsensus, string ChangeSummary);
+internal sealed record ModelResult(string Model, string Answer, string ChangeSummary);
