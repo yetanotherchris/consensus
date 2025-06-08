@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using AngleSharp.Html.Parser;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -68,10 +67,10 @@ internal sealed class ConsensusProcessor
         {
             if (results.Count > 0)
             {
-                logBuilder.AppendLine("## Change Summaries");
+                logBuilder.AppendLine("### Change Summaries");
                 foreach (var r in results)
                 {
-                    logBuilder.AppendLine($"### {r.Model}");
+                    logBuilder.AppendLine($"#### {r.Model}");
                     logBuilder.AppendLine(r.ChangeSummary);
                     logBuilder.AppendLine();
                 }
@@ -81,10 +80,13 @@ internal sealed class ConsensusProcessor
             await File.WriteAllTextAsync(logPath, logBuilder.ToString());
         }
 
-        var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
-        await File.WriteAllTextAsync(path, answer);
-
         var summary = await GenerateFinalChangesSummaryAsync(previousModel, results);
+
+        var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
+        var finalAnswer = ExtractRevisedAnswer(answer);
+        var fileContent = $"## Answer\n\n{finalAnswer}\n\n## Changes Summary\n\n{summary}\n";
+        await File.WriteAllTextAsync(path, fileContent);
+
         return new(path, summary, logPath == string.Empty ? null : logPath);
     }
 
@@ -118,9 +120,7 @@ internal sealed class ConsensusProcessor
                 });
             });
 
-        var parser = new AngleSharp.Html.Parser.HtmlParser();
-        var doc = parser.ParseDocument(summary);
-        return doc.QuerySelector("ChangesSummary")?.TextContent.Trim() ?? summary.Trim();
+        return ResponseParser.GetChangesSummary(summary);
     }
 
     private static string SanitizeFileName(string text)
@@ -131,6 +131,9 @@ internal sealed class ConsensusProcessor
             .Select(c => char.IsWhiteSpace(c) || invalid.Contains(c) ? '_' : c)
             .ToArray());
     }
+
+    private static string ExtractRevisedAnswer(string answer)
+        => ResponseParser.GetRevisedAnswer(answer);
 }
 
 internal sealed record ConsensusResult(string Path, string ChangesSummary, string? LogPath);
