@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using AngleSharp.Html.Parser;
 using OpenAI.Chat;
 
 namespace ConsensusApp;
@@ -12,7 +11,6 @@ internal sealed class ModelQueue
     private readonly Queue<string> _models;
     private readonly OpenRouterClient _client;
     private readonly IConsoleService _console;
-    private static readonly HtmlParser Parser = new();
 
     public ModelQueue(IEnumerable<string> models, OpenRouterClient client, IConsoleService console)
     {
@@ -46,7 +44,7 @@ internal sealed class ModelQueue
             }
             else
             {
-                var revised = ExtractRevisedAnswer(answer);
+                var revised = ResponseParser.GetRevisedAnswer(answer);
                 messages = new()
                 {
                     ChatMessage.CreateSystemMessage(string.Format(Prompts.FollowupSystemPrompt, previousModel)),
@@ -60,7 +58,7 @@ internal sealed class ModelQueue
         string changeSummary;
         if (previousModel == string.Empty)
         {
-            changeSummary = ExtractInitialResponseSummary(answer);
+            changeSummary = ResponseParser.GetInitialResponseSummary(answer);
         }
         else
         {
@@ -69,7 +67,7 @@ internal sealed class ModelQueue
 
         if (logBuilder is not null)
         {
-            logBuilder.AppendLine($"### {model}");
+            logBuilder.AppendLine($"#### {model}");
             if (logLevel == LogLevel.Full)
             {
                 logBuilder.AppendLine(answer);
@@ -85,25 +83,6 @@ internal sealed class ModelQueue
         return new ModelResult(model, answer, changeSummary.Trim());
     }
 
-    private static string ExtractRevisedAnswer(string answer)
-    {
-        var document = Parser.ParseDocument(answer);
-        var element = document.QuerySelector("RevisedAnswer") ?? document.QuerySelector("InitialResponse");
-        return element?.TextContent.Trim() ?? answer;
-    }
-
-    private static string ExtractInitialResponseSummary(string answer)
-    {
-        var document = Parser.ParseDocument(answer);
-        return document.QuerySelector("InitialResponseSummary")?.TextContent.Trim() ?? string.Empty;
-    }
-
-    private static string ExtractInitialResponse(string answer)
-    {
-        var document = Parser.ParseDocument(answer);
-        var element = document.QuerySelector("InitialResponse");
-        return element?.TextContent.Trim() ?? answer;
-    }
 }
 
 internal sealed record ModelResult(string Model, string Answer, string ChangeSummary);

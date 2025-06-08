@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using AngleSharp.Html.Parser;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -68,10 +67,10 @@ internal sealed class ConsensusProcessor
         {
             if (results.Count > 0)
             {
-                logBuilder.AppendLine("## Change Summaries");
+                logBuilder.AppendLine("### Change Summaries");
                 foreach (var r in results)
                 {
-                    logBuilder.AppendLine($"### {r.Model}");
+                    logBuilder.AppendLine($"#### {r.Model}");
                     logBuilder.AppendLine(r.ChangeSummary);
                     logBuilder.AppendLine();
                 }
@@ -119,9 +118,7 @@ internal sealed class ConsensusProcessor
                 });
             });
 
-        var parser = new AngleSharp.Html.Parser.HtmlParser();
-        var doc = parser.ParseDocument(summary);
-        return doc.QuerySelector("ChangesSummary")?.TextContent.Trim() ?? summary.Trim();
+        return ResponseParser.GetChangesSummary(summary);
     }
 
     private static string SanitizeFileName(string text)
@@ -134,12 +131,7 @@ internal sealed class ConsensusProcessor
     }
 
     private static string ExtractRevisedAnswer(string answer)
-    {
-        var parser = new AngleSharp.Html.Parser.HtmlParser();
-        var document = parser.ParseDocument(answer);
-        var element = document.QuerySelector("RevisedAnswer") ?? document.QuerySelector("InitialResponse");
-        return element?.TextContent.Trim() ?? answer;
-    }
+        => ResponseParser.GetRevisedAnswer(answer);
 }
 
 internal sealed record ConsensusResult(string Path, string ChangesSummary, string? LogPath);
