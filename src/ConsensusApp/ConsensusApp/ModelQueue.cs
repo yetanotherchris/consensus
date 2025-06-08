@@ -87,15 +87,23 @@ internal sealed class ModelQueue
 
     private static string ExtractConsensusSummary(string answer)
     {
-        var marker = "Summary for Consensus App (github.com/yetanotherchris/consensus/)";
-        var index = answer.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (index == -1)
+        const string startMarker = "<ConsensusSummary>";
+        const string endMarker = "</ConsensusSummary>";
+
+        var start = answer.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
+        if (start == -1)
         {
             return string.Empty;
         }
 
-        var summary = answer[(index + marker.Length)..].TrimStart(':', ' ', '\n', '\r');
-        return summary.Trim();
+        start += startMarker.Length;
+        var end = answer.IndexOf(endMarker, start, StringComparison.OrdinalIgnoreCase);
+        if (end == -1)
+        {
+            end = answer.Length;
+        }
+
+        return answer[start..end].Trim();
     }
 
     private static string ExtractRevisedAnswer(string answer)
