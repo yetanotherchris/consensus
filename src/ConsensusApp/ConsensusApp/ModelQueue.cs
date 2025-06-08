@@ -45,10 +45,11 @@ internal sealed class ModelQueue
             }
             else
             {
+                var revised = ExtractRevisedAnswer(answer);
                 messages = new()
                 {
                     ChatMessage.CreateSystemMessage(string.Format(Prompts.FollowupSystemPrompt, previousModel)),
-                    ChatMessage.CreateUserMessage(answer)
+                    ChatMessage.CreateUserMessage(revised)
                 };
             }
 
@@ -95,6 +96,27 @@ internal sealed class ModelQueue
 
         var summary = answer[(index + marker.Length)..].TrimStart(':', ' ', '\n', '\r');
         return summary.Trim();
+    }
+
+    private static string ExtractRevisedAnswer(string answer)
+    {
+        const string startMarker = "<RevisedAnswer>";
+        const string endMarker = "</RevisedAnswer>";
+
+        var start = answer.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
+        if (start == -1)
+        {
+            return answer;
+        }
+
+        start += startMarker.Length;
+        var end = answer.IndexOf(endMarker, start, StringComparison.OrdinalIgnoreCase);
+        if (end == -1)
+        {
+            end = answer.Length;
+        }
+
+        return answer[start..end].Trim();
     }
 }
 
