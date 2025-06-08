@@ -18,11 +18,11 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
         var suggestions = new[]
         {
             "openai/gpt-4o",
-            "meta-llama/llama-3-70b-instruct",
-            "anthropic/claude-3-opus",
-            "perplexity/pplx-70b-online",
-            "xai/grok-1",
-            "google/gemini-pro"
+            "meta-llama/llama-4-maverick:free",
+            "anthropic/claude-3.7-sonnet",
+            "grok-3",
+            "google/gemini-2.0-flash-001",
+            "deepseek/deepseek-r1-0528:free"
         };
 
         var models = AnsiConsole.Prompt(
