@@ -54,7 +54,7 @@ internal sealed class ConsensusProcessor
             _logger.LogInformation("\n[bold]{Model} change summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
         }
 
-        var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILES") is not null;
+        var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILENAMES") is not null;
         var baseName = uniqueFiles
             ? DateTime.Now.ToString("yyyyMMddHHmmss")
             : SanitizeFileName(prompt).ToLowerInvariant();
