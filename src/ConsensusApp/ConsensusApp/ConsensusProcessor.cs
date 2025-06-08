@@ -50,7 +50,8 @@ internal sealed class ConsensusProcessor
             if (firstModel)
             {
                 _console.MarkupLine("Initial answer generated.");
-                _logger.LogInformation("\n[bold]{Model} answer summary:[/]\n- {Summary}\n", result.Model, result.ChangeSummary);
+                var initialSummary = result.InitialSummary ?? ResponseParser.GetInitialResponseSummary(result.Answer);
+                _logger.LogInformation("\n[bold]{Model} answer summary:[/]\n- {Summary}\n", result.Model, initialSummary);
             }
             else
             {
@@ -102,7 +103,7 @@ internal sealed class ConsensusProcessor
                 });
             });
 
-        return summary.Split('\n').FirstOrDefault() ?? string.Empty;
+        return summary.Trim();
     }
 
     private async Task<string> GenerateFinalChangesSummaryAsync(string model, IEnumerable<ModelResult> results)

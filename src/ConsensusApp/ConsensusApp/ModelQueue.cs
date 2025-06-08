@@ -56,8 +56,10 @@ internal sealed class ModelQueue
         });
 
         string changeSummary;
+        string? initialSummary = null;
         if (previousModel == string.Empty)
         {
+            initialSummary = ResponseParser.GetInitialResponseSummary(answer);
             changeSummary = ResponseParser.GetChangesSummary(answer);
             if (string.IsNullOrEmpty(changeSummary))
             {
@@ -80,13 +82,19 @@ internal sealed class ModelQueue
                 logBuilder.AppendLine();
             }
 
+            if (!string.IsNullOrEmpty(initialSummary))
+            {
+                logBuilder.AppendLine(initialSummary.Trim());
+                logBuilder.AppendLine();
+            }
+
             logBuilder.AppendLine(changeSummary.Trim());
             logBuilder.AppendLine();
         }
 
-        return new ModelResult(model, answer, changeSummary.Trim());
+        return new ModelResult(model, answer, changeSummary.Trim(), initialSummary?.Trim());
     }
 
 }
 
-internal sealed record ModelResult(string Model, string Answer, string ChangeSummary);
+internal sealed record ModelResult(string Model, string Answer, string ChangeSummary, string? InitialSummary);
