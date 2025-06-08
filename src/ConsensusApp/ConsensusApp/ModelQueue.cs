@@ -58,35 +58,35 @@ internal sealed class ModelQueue
 
             answer = await _client.QueryAsync(model, messages);
             summaryForConsensus = ExtractConsensusSummary(answer);
-
-            if (logBuilder is not null)
-            {
-                if (logLevel == LogLevel.Full)
-                {
-                    logBuilder.AppendLine($"### {model}");
-                    logBuilder.AppendLine(answer);
-                    logBuilder.AppendLine();
-                    logBuilder.AppendLine("-----------");
-                    logBuilder.AppendLine();
-                }
-                else if (logLevel == LogLevel.Minimal)
-                {
-                    string summary;
-                    if (previousModel == string.Empty)
-                    {
-                        summary = "Initial answer generated.";
-                    }
-                    else
-                    {
-                        summary = await summarizeChanges(model, answer);
-                    }
-
-                    logBuilder.AppendLine($"### {model}");
-                    logBuilder.AppendLine(summary.Trim());
-                    logBuilder.AppendLine();
-                }
-            }
         });
+
+        if (logBuilder is not null)
+        {
+            if (logLevel == LogLevel.Full)
+            {
+                logBuilder.AppendLine($"### {model}");
+                logBuilder.AppendLine(answer);
+                logBuilder.AppendLine();
+                logBuilder.AppendLine("-----------");
+                logBuilder.AppendLine();
+            }
+            else if (logLevel == LogLevel.Minimal)
+            {
+                string summary;
+                if (previousModel == string.Empty)
+                {
+                    summary = "Initial answer generated.";
+                }
+                else
+                {
+                    summary = await summarizeChanges(model, answer);
+                }
+
+                logBuilder.AppendLine($"### {model}");
+                logBuilder.AppendLine(summary.Trim());
+                logBuilder.AppendLine();
+            }
+        }
 
         return new ModelResult(model, answer, summaryForConsensus);
     }
