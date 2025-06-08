@@ -43,6 +43,11 @@ internal sealed class ConsensusProcessor
             results.Add(result);
         }
 
+        var uniqueFiles = Environment.GetEnvironmentVariable("CONSENSUS_UNIQUE_FILES") is not null;
+        var baseName = uniqueFiles
+            ? DateTime.Now.ToString("yyyyMMddHHmmss")
+            : SanitizeFileName(prompt);
+
         if (logBuilder is not null)
         {
             if (results.Count > 0)
@@ -56,11 +61,11 @@ internal sealed class ConsensusProcessor
                 }
             }
 
-            logPath = Path.Combine(Directory.GetCurrentDirectory(), $"log_{DateTime.Now:yyyyMMddHHmmss}.md");
+            logPath = Path.Combine(Directory.GetCurrentDirectory(), $"log_{baseName}.md");
             await File.WriteAllTextAsync(logPath, logBuilder.ToString());
         }
 
-        var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{DateTime.Now:yyyyMMddHHmmss}.md");
+        var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         await File.WriteAllTextAsync(path, answer);
 
         var summary = await SummarizeAsync(previousModel, answer);
@@ -97,6 +102,15 @@ internal sealed class ConsensusProcessor
             });
 
         return summary.Split('\n').FirstOrDefault() ?? string.Empty;
+    }
+
+    private static string SanitizeFileName(string text)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        return new string(text
+            .Take(10)
+            .Select(c => char.IsWhiteSpace(c) || invalid.Contains(c) ? '_' : c)
+            .ToArray());
     }
 }
 
