@@ -93,7 +93,7 @@ internal sealed class ModelQueue
 
     private static string ExtractConsensusSummary(string answer)
     {
-        var marker = "Summary for Consensus";
+        var marker = "Summary for Consensus App (github.com/yetanotherchris/consensus/)";
         var index = answer.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
         if (index == -1)
         {
