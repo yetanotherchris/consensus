@@ -21,7 +21,7 @@ internal sealed class ModelQueue
 
     public bool HasNext => _models.Count > 0;
 
-    public async Task<(string Model, string Answer)> PopAsync(
+    public async Task<ModelResult> PopAsync(
         string prompt,
         string answer,
         string previousModel,
@@ -81,6 +81,8 @@ internal sealed class ModelQueue
             }
         });
 
-        return (model, answer);
+        return new ModelResult(model, answer);
     }
 }
+
+internal sealed record ModelResult(string Model, string Answer);

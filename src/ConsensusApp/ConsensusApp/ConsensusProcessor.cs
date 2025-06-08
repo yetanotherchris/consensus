@@ -29,13 +29,16 @@ internal sealed class ConsensusProcessor
         var queue = new ModelQueue(models, _client, _console);
         while (queue.HasNext)
         {
-            (previousModel, answer) = await queue.PopAsync(
+            var result = await queue.PopAsync(
                 prompt,
                 answer,
                 previousModel,
                 logLevel,
                 logBuilder,
                 SummarizeChangesAsync);
+
+            previousModel = result.Model;
+            answer = result.Answer;
         }
 
         if (logBuilder is not null)
