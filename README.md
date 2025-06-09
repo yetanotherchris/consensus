@@ -20,3 +20,7 @@ You can optionally create a markdown log file of each model's response. When pro
 By default the log and response files use the first ten characters of the prompt for their names and are overwritten on each run. Set the `CONSENSUS_UNIQUE_FILES` environment variable to create new files with a timestamp instead.
 The system prompts used for each model are stored as text files in `Resources` and embedded in the application.
 After all models have responded, the final model generates a summary of the changes inside `<ChangesSummary>` tags which credits each change to the model that suggested it and is printed to the terminal.
+
+## Web API
+
+The `Consensus.Api` project exposes two endpoints. The `/consensus` route returns a JSON payload with the path to the generated answer file, its change summary and optional log path. The `/consensus/stream` route implements the [OpenAI streaming format](https://platform.openai.com/docs/api-reference/responses-streaming). Each `data:` line contains a JSON object with a `choices` array holding `delta.content` strings. A final event includes the consensus result followed by `data: [DONE]`.

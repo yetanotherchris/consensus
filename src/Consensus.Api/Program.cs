@@ -3,6 +3,7 @@ using Consensus.Console;
 using Consensus.Api;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -40,14 +41,16 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
     };
 
     response.Headers.Add("Content-Type", "text/event-stream");
+    response.Headers.Add("Cache-Control", "no-cache");
+
+    ConsensusResponse? finalResponse = null;
 
     var processing = Task.Run(async () =>
     {
         try
         {
             var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
-            var json = JsonSerializer.Serialize(new ConsensusResponse(result.Path, result.ChangesSummary, result.LogPath));
-            await console.Channel.Writer.WriteAsync($"FINAL:{json}");
+            finalResponse = new ConsensusResponse(result.Path, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
         {
@@ -61,9 +64,36 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
 
     await foreach (var message in console.Channel.Reader.ReadAllAsync())
     {
-        await response.WriteAsync($"data: {message}\n\n");
+        if (message.StartsWith("ERROR:"))
+        {
+            var errorJson = JsonSerializer.Serialize(new { error = message.Substring(6) });
+            await response.WriteAsync($"data: {errorJson}\n\n");
+            await response.Body.FlushAsync();
+            break;
+        }
+
+        var chunk = new
+        {
+            choices = new[] { new { index = 0, delta = new { content = message }, finish_reason = (string?)null } }
+        };
+        var json = JsonSerializer.Serialize(chunk);
+        await response.WriteAsync($"data: {json}\n\n");
         await response.Body.FlushAsync();
     }
+
+    if (finalResponse is not null)
+    {
+        var finalJson = JsonSerializer.Serialize(new
+        {
+            choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } },
+            consensus_result = finalResponse
+        });
+        await response.WriteAsync($"data: {finalJson}\n\n");
+        await response.Body.FlushAsync();
+    }
+
+    await response.WriteAsync("data: [DONE]\n\n");
+    await response.Body.FlushAsync();
 
     await processing;
 });
