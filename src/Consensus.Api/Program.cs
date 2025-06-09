@@ -7,7 +7,16 @@ using System.Text.Json.Serialization;
 using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new() { Title = "Consensus API", Version = "v1" });
+});
+
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapPost("/consensus", async (ConsensusRequest request) =>
 {
@@ -25,7 +34,10 @@ app.MapPost("/consensus", async (ConsensusRequest request) =>
 
     var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
     return new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
-});
+})
+    .WithName("CreateConsensus")
+    .WithSummary("Generates an aggregated answer from multiple models.")
+    .WithOpenApi();
 
 app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse response) =>
 {
@@ -97,7 +109,10 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
     await response.Body.FlushAsync();
 
     await processing;
-});
+})
+    .WithName("StreamConsensus")
+    .WithSummary("Streams each model's response in OpenAI format.")
+    .WithOpenApi();
 
 app.MapGet("/log", (string path) =>
 {
@@ -108,6 +123,9 @@ app.MapGet("/log", (string path) =>
 
     var text = File.ReadAllText(path);
     return Results.Text(text, "text/markdown");
-});
+})
+    .WithName("GetLog")
+    .WithSummary("Returns the contents of a previous log file.")
+    .WithOpenApi();
 
 app.Run();
