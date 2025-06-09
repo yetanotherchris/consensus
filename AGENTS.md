@@ -16,8 +16,8 @@ For a full example, see <https://agentsmd.net/#example>.
 - Run the `dotnet` commands above to ensure the project builds and tests pass.
 
 ## Project Structure for OpenAI Codex Navigation
-- The solution file `Consensus.sln` references the project in `src/ConsensusApp`.
-- Source code resides under `src/ConsensusApp/ConsensusApp`.
+- The solution file `Consensus.sln` references the project in `src/Consensus.Console`.
+- Source code resides under `src/Consensus.Console/Consensus.Console`.
 
 ## Coding Conventions for OpenAI Codex
 - Use four spaces for indentation in C# files.

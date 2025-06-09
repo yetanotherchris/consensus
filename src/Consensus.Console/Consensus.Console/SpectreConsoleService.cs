@@ -1,4 +1,4 @@
-namespace ConsensusApp;
+namespace Consensus.Console;
 
 using Spectre.Console;
 

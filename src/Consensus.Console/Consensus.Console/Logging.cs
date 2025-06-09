@@ -1,4 +1,4 @@
-namespace ConsensusApp;
+namespace Consensus;
 
 internal enum LogLevel
 {

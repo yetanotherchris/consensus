@@ -8,7 +8,7 @@ using OpenAI.Chat;
 using Spectre.Console;
 using Xunit;
 
-namespace ConsensusApp.Tests;
+namespace Consensus.Tests;
 
 public class ConsensusProcessorTests
 {
@@ -21,9 +21,9 @@ public class ConsensusProcessorTests
             "<ChangesSummary>Final summary</ChangesSummary>"
         });
 
-        var client = new ConsensusApp.OpenRouterClient(new StubChatClient(responses));
+        var client = new Consensus.OpenRouterClient(new StubChatClient(responses));
         var console = new StubConsoleService();
-        var processor = new ConsensusApp.ConsensusProcessor(client, console, NullLogger<ConsensusApp.ConsensusProcessor>.Instance);
+        var processor = new Consensus.ConsensusProcessor(client, console, NullLogger<Consensus.ConsensusProcessor>.Instance);
 
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
@@ -32,7 +32,7 @@ public class ConsensusProcessorTests
 
         try
         {
-            var result = await processor.RunAsync("TestPrompt", new[] { "model1" }, ConsensusApp.LogLevel.Minimal);
+            var result = await processor.RunAsync("TestPrompt", new[] { "model1" }, Consensus.LogLevel.Minimal);
 
             Assert.True(File.Exists(result.Path));
             Assert.NotNull(result.LogPath);
@@ -64,9 +64,9 @@ public class ConsensusProcessorTests
         });
 
         var stub = new StubChatClient(responses);
-        var client = new ConsensusApp.OpenRouterClient(stub);
+        var client = new Consensus.OpenRouterClient(stub);
         var console = new StubConsoleService();
-        var processor = new ConsensusApp.ConsensusProcessor(client, console, NullLogger<ConsensusApp.ConsensusProcessor>.Instance);
+        var processor = new Consensus.ConsensusProcessor(client, console, NullLogger<Consensus.ConsensusProcessor>.Instance);
 
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
@@ -75,7 +75,7 @@ public class ConsensusProcessorTests
 
         try
         {
-            var result = await processor.RunAsync("Prompt", new[] { "model1", "model2" }, ConsensusApp.LogLevel.Minimal);
+            var result = await processor.RunAsync("Prompt", new[] { "model1", "model2" }, Consensus.LogLevel.Minimal);
 
             Assert.Equal(4, stub.Requests.Count);
             var summaryCall = stub.Requests[2];
@@ -108,9 +108,9 @@ public class ConsensusProcessorTests
         });
 
         var stub = new StubChatClient(responses);
-        var client = new ConsensusApp.OpenRouterClient(stub);
+        var client = new Consensus.OpenRouterClient(stub);
         var console = new StubConsoleService();
-        var processor = new ConsensusApp.ConsensusProcessor(client, console, NullLogger<ConsensusApp.ConsensusProcessor>.Instance);
+        var processor = new Consensus.ConsensusProcessor(client, console, NullLogger<Consensus.ConsensusProcessor>.Instance);
 
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
@@ -119,7 +119,7 @@ public class ConsensusProcessorTests
 
         try
         {
-            var result = await processor.RunAsync("Prompt", new[] { "model1", "model2" }, ConsensusApp.LogLevel.Minimal);
+            var result = await processor.RunAsync("Prompt", new[] { "model1", "model2" }, Consensus.LogLevel.Minimal);
 
             Assert.Equal(3, stub.Requests.Count);
 
@@ -137,7 +137,7 @@ public class ConsensusProcessorTests
         }
     }
 
-    private sealed class StubConsoleService : ConsensusApp.IConsoleService
+    private sealed class StubConsoleService : Consensus.Console.IConsoleService
     {
         public T Ask<T>(string prompt) => throw new NotImplementedException();
         public T Prompt<T>(IPrompt<T> prompt) => throw new NotImplementedException();
@@ -146,7 +146,7 @@ public class ConsensusProcessorTests
         public Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action) => action();
     }
 
-    private sealed class StubChatClient : ConsensusApp.IChatClient
+    private sealed class StubChatClient : Consensus.IChatClient
     {
         private readonly Queue<string> _responses;
         public List<IReadOnlyList<ChatMessage>> Requests { get; } = new();

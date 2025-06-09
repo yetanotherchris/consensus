@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
+using Consensus.Console;
 
-namespace ConsensusApp;
+namespace Consensus;
 
 internal sealed class ConsensusProcessor
 {
