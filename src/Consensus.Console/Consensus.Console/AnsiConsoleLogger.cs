@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 
-namespace ConsensusApp;
+namespace Consensus.Console;
 
 /// <summary>
 /// Simple <see cref="ILogger"/> implementation that writes markup

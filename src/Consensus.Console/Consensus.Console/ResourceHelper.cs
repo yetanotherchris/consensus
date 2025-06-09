@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 
-namespace ConsensusApp;
+namespace Consensus;
 
 internal static class ResourceHelper
 {

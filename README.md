@@ -11,7 +11,7 @@ dotnet build
 Run the application with:
 
 ```
-dotnet run --project src/ConsensusApp/ConsensusApp -- "your question here"
+dotnet run --project src/Consensus.Console/Consensus.Console -- "your question here"
 ```
 
 The program will prompt you for models and your OpenRouter API key if not provided in the `OPENROUTER_API_KEY` environment variable.
@@ -20,3 +20,7 @@ You can optionally create a markdown log file of each model's response. When pro
 By default the log and response files use the first ten characters of the prompt for their names and are overwritten on each run. Set the `CONSENSUS_UNIQUE_FILES` environment variable to create new files with a timestamp instead.
 The system prompts used for each model are stored as text files in `Resources` and embedded in the application.
 After all models have responded, the final model generates a summary of the changes inside `<ChangesSummary>` tags which credits each change to the model that suggested it and is printed to the terminal.
+
+## Web API
+
+The `Consensus.Api` project exposes three endpoints. The `/consensus` route returns a JSON payload with the answer text, path to the generated file, its change summary and optional log path. The `/consensus/stream` route implements the [OpenAI streaming format](https://platform.openai.com/docs/api-reference/responses-streaming) and emits a chunk after every LLM response plus a final result followed by `data: [DONE]`. Finally `/log?path=PATH` returns the contents of a previously generated log file.

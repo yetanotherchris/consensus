@@ -1,4 +1,4 @@
-namespace ConsensusApp;
+namespace Consensus;
 
 using System;
 using System.Collections.Generic;

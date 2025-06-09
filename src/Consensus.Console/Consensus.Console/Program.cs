@@ -1,8 +1,10 @@
 using Spectre.Console.Cli;
 using Spectre.Console;
 using Microsoft.Extensions.Logging;
+using Consensus;
+using Consensus.Console;
 
-namespace ConsensusApp;
+namespace Consensus.Console;
 
 public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
 {

@@ -1,6 +1,6 @@
 using AngleSharp.Html.Parser;
 
-namespace ConsensusApp;
+namespace Consensus;
 
 internal static class ResponseParser
 {

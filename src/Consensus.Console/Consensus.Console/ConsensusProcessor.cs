@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
+using Consensus.Console;
 
-namespace ConsensusApp;
+namespace Consensus;
 
 internal sealed class ConsensusProcessor
 {
@@ -52,6 +53,7 @@ internal sealed class ConsensusProcessor
             previousModel = result.Model;
             answer = result.Answer;
             results.Add(result);
+            _console.MarkupLine(ResponseParser.GetRevisedAnswer(answer));
 
             if (firstModel)
             {
@@ -94,7 +96,7 @@ internal sealed class ConsensusProcessor
         var fileContent = $"## Answer\n\n{finalAnswer}\n\n## Changes Summary\n\n{summary}\n";
         await File.WriteAllTextAsync(path, fileContent);
 
-        return new(path, summary, logPath == string.Empty ? null : logPath);
+        return new(path, finalAnswer, summary, logPath == string.Empty ? null : logPath);
     }
 
     private async Task<string> SummarizeChangesAsync(string model, string answer, string previousAnswer)
@@ -144,4 +146,4 @@ internal sealed class ConsensusProcessor
         => ResponseParser.GetRevisedAnswer(answer);
 }
 
-internal sealed record ConsensusResult(string Path, string ChangesSummary, string? LogPath);
+internal sealed record ConsensusResult(string Path, string Answer, string ChangesSummary, string? LogPath);
