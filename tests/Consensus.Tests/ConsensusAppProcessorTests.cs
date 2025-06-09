@@ -40,6 +40,7 @@ public class ConsensusProcessorTests
 
             var answer = File.ReadAllText(result.Path);
             Assert.Equal("## Answer\n\nAnswer1\n\n## Changes Summary\n\nFinal summary\n", answer);
+            Assert.Equal(answer, result.Answer);
 
             var log = File.ReadAllText(result.LogPath!);
             var expectedLog = "# model1\nSummary1\n\nNo changes as it's the first response.\n\n### Change Summaries\n#### model1\nNo changes as it's the first response.\n\n";
@@ -85,6 +86,7 @@ public class ConsensusProcessorTests
 
             var answer = File.ReadAllText(result.Path);
             Assert.Equal("## Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
+            Assert.Equal(answer, result.Answer);
 
             var log = File.ReadAllText(result.LogPath!);
             var expectedLog = "# model1\nSummary1\n\nNo changes as it's the first response.\n\n# model2\nBullet summary 2\n\n### Change Summaries\n#### model1\nNo changes as it's the first response.\n\n#### model2\nBullet summary 2\n\n";

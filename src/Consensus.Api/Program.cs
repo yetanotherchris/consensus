@@ -4,6 +4,7 @@ using Consensus.Api;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -23,7 +24,7 @@ app.MapPost("/consensus", async (ConsensusRequest request) =>
     };
 
     var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
-    return new ConsensusResponse(result.Path, result.ChangesSummary, result.LogPath);
+    return new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
 });
 
 app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse response) =>
@@ -50,7 +51,7 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
         try
         {
             var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
-            finalResponse = new ConsensusResponse(result.Path, result.ChangesSummary, result.LogPath);
+            finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
         {
@@ -96,6 +97,17 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
     await response.Body.FlushAsync();
 
     await processing;
+});
+
+app.MapGet("/log", (string path) =>
+{
+    if (!File.Exists(path))
+    {
+        return Results.NotFound();
+    }
+
+    var text = File.ReadAllText(path);
+    return Results.Text(text, "text/markdown");
 });
 
 app.Run();

@@ -23,4 +23,4 @@ After all models have responded, the final model generates a summary of the chan
 
 ## Web API
 
-The `Consensus.Api` project exposes two endpoints. The `/consensus` route returns a JSON payload with the path to the generated answer file, its change summary and optional log path. The `/consensus/stream` route implements the [OpenAI streaming format](https://platform.openai.com/docs/api-reference/responses-streaming). Each `data:` line contains a JSON object with a `choices` array holding `delta.content` strings. A final event includes the consensus result followed by `data: [DONE]`.
+The `Consensus.Api` project exposes three endpoints. The `/consensus` route returns a JSON payload with the answer text, path to the generated file, its change summary and optional log path. The `/consensus/stream` route implements the [OpenAI streaming format](https://platform.openai.com/docs/api-reference/responses-streaming) and emits a chunk after every LLM response plus a final result followed by `data: [DONE]`. Finally `/log?path=PATH` returns the contents of a previously generated log file.
