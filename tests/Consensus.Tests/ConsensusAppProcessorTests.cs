@@ -39,7 +39,7 @@ public class ConsensusProcessorTests
             Assert.True(File.Exists(result.LogPath!));
 
             var answer = File.ReadAllText(result.Path);
-            Assert.Equal("## Answer\n\nAnswer1\n\n## Changes Summary\n\nFinal summary\n", answer);
+            Assert.Equal("## Final Answer\n\nAnswer1\n\n## Changes Summary\n\nFinal summary\n", answer);
             Assert.Equal(answer, result.Answer);
 
             var log = File.ReadAllText(result.LogPath!);
@@ -85,7 +85,7 @@ public class ConsensusProcessorTests
             Assert.Contains("Answer2", summaryCall[2].Content.First().Text);
 
             var answer = File.ReadAllText(result.Path);
-            Assert.Equal("## Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
+            Assert.Equal("## Final Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
             Assert.Equal(answer, result.Answer);
 
             var log = File.ReadAllText(result.LogPath!);
@@ -126,7 +126,7 @@ public class ConsensusProcessorTests
             Assert.Equal(3, stub.Requests.Count);
 
             var answer = File.ReadAllText(result.Path);
-            Assert.Equal("## Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
+            Assert.Equal("## Final Answer\n\nAnswer2\n\n## Changes Summary\n\nFinal summary\n", answer);
 
             var log = File.ReadAllText(result.LogPath!);
             var expectedLog = "# model2\nSummary2\n\nNo changes as it's the first response.\n\n### Change Summaries\n#### model2\nNo changes as it's the first response.\n\n";

@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\*.txt" />
+    <EmbeddedResource Include="Resources\*.md" />
   </ItemGroup>
 
 </Project>
