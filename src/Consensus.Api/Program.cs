@@ -98,7 +98,7 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
     {
         var finalJson = JsonSerializer.Serialize(new
         {
-            choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } },
+            choices = new[] { new { index = 0, delta = new { content = finalResponse.Answer }, finish_reason = "stop" } },
             consensus_result = finalResponse
         });
         await response.WriteAsync($"data: {finalJson}\n\n");
@@ -157,7 +157,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
     {
         try
         {
-            var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None, outputAnswers: false);
+        var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None, outputAnswers: false, logAnswers: false);
             finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
@@ -193,7 +193,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
     {
         var finalJson = JsonSerializer.Serialize(new
         {
-            choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } },
+            choices = new[] { new { index = 0, delta = new { content = finalResponse.Answer }, finish_reason = "stop" } },
             consensus_result = finalResponse
         });
         await response.WriteAsync($"data: {finalJson}\n\n");

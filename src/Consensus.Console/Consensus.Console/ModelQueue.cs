@@ -28,7 +28,8 @@ internal sealed class ModelQueue
         string previousModel,
         LogLevel logLevel,
         StringBuilder? logBuilder,
-        Func<string, string, string, Task<string>> summarizeChanges)
+        Func<string, string, string, Task<string>> summarizeChanges,
+        bool logAnswers)
     {
         var model = _models.Dequeue();
 
@@ -81,7 +82,7 @@ internal sealed class ModelQueue
         if (logBuilder is not null)
         {
             logBuilder.AppendLine($"# {model}");
-            if (logLevel == LogLevel.Full)
+            if (logLevel == LogLevel.Full || logAnswers)
             {
                 logBuilder.AppendLine(answer);
                 logBuilder.AppendLine();

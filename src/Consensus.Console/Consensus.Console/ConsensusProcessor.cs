@@ -23,7 +23,7 @@ internal sealed class ConsensusProcessor
         _logger = logger;
     }
 
-    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel, bool outputAnswers = true)
+    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel, bool outputAnswers = true, bool logAnswers = false)
     {
         string answer = prompt;
         string previousModel = string.Empty;
@@ -42,7 +42,8 @@ internal sealed class ConsensusProcessor
                 previousModel,
                 logLevel,
                 logBuilder,
-                SummarizeChangesAsync);
+                SummarizeChangesAsync,
+                logAnswers);
 
             if (string.IsNullOrWhiteSpace(result.Answer))
             {
