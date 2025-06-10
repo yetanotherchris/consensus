@@ -63,7 +63,10 @@ internal sealed class ConsensusProcessor
                 var summaryText = firstModel
                     ? result.InitialSummary ?? ResponseParser.GetInitialResponseSummary(result.Answer)
                     : result.ChangeSummary;
-                _console.MarkupLine(summaryText);
+                var summaryMarkup = TemplateEngine.Render(
+                    Templates.ModelSummaryTemplate,
+                    new { ModelSummary = summaryText, Model = result.Model });
+                _console.MarkupLine(summaryMarkup);
             }
 
             if (firstModel)
@@ -106,7 +109,8 @@ internal sealed class ConsensusProcessor
         var finalAnswer = ExtractRevisedAnswer(answer);
         var fileContent = TemplateEngine.Render(
             Templates.AnswerTemplate,
-            new { FinalAnswer = finalAnswer, ChangesSummary = summary });
+            new { FinalAnswer = finalAnswer, ChangesSummary = summary })
+            .TrimEnd() + "\n";
         await File.WriteAllTextAsync(path, fileContent);
 
         _console.MarkupLine(fileContent);
