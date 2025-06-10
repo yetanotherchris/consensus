@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Spectre.Console;
 using Consensus.Console;
+using Consensus;
 
 namespace Consensus.Api;
 
@@ -22,8 +23,10 @@ internal sealed class ApiConsoleService : IConsoleService
 
     public async Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action)
     {
-        var message = string.Format(statusFormat, arg);
-        Channel.Writer.TryWrite($"**{message}...**\n");
+        var markup = TemplateEngine.Render(
+            Templates.QueryingTemplate,
+            new { Model = arg });
+        Channel.Writer.TryWrite(markup + "\n");
         await action();
     }
 }
