@@ -1,3 +1,4 @@
-Summarize the changes you made compared to the previous answer using bullet points where possible. 
-Also include bullet points for any pros and cons of the previous model's answer. 
+Summarize the changes you made compared to the previous answer using bullet points where possible.
+Also include bullet points for any pros and cons of the previous model's answer.
+Keep the entire summary to three short sentences at most.
 If there are no issues and you agree with the previous answer, reply with 'I agree.' Don't use any Markdown except for bullet lists.
