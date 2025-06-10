@@ -157,7 +157,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
     {
         try
         {
-            var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None);
+            var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None, outputAnswers: false);
             finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
