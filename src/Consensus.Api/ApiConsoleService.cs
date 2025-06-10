@@ -21,7 +21,8 @@ internal sealed class ApiConsoleService : IConsoleService
 
     public async Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action)
     {
-        Channel.Writer.TryWrite(string.Format(statusFormat, arg));
+        var message = string.Format(statusFormat, arg);
+        Channel.Writer.TryWrite($"### {message}");
         await action();
     }
 }
