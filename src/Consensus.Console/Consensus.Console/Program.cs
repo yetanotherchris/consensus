@@ -62,7 +62,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
         var client = new OpenRouterClient(apiKey);
         var processor = new ConsensusProcessor(client, console, processorLogger);
 
-        var result = await processor.RunAsync(prompt, models, logLevel);
+        var result = await processor.RunAsync(prompt, models, logLevel, logAnswers: logLevel == Consensus.LogLevel.Full);
 
         logger.LogInformation("\n[bold]Changes Summary:[/]\n{Summary}\n", result.ChangesSummary);
         logger.LogInformation("[bold]Full answer written to:[/]\n{Path}\n", result.Path);

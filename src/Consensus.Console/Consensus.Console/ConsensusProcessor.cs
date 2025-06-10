@@ -23,7 +23,7 @@ internal sealed class ConsensusProcessor
         _logger = logger;
     }
 
-    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel)
+    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel, bool outputAnswers = true, bool logAnswers = false)
     {
         string answer = prompt;
         string previousModel = string.Empty;
@@ -42,7 +42,8 @@ internal sealed class ConsensusProcessor
                 previousModel,
                 logLevel,
                 logBuilder,
-                SummarizeChangesAsync);
+                SummarizeChangesAsync,
+                logAnswers);
 
             if (string.IsNullOrWhiteSpace(result.Answer))
             {
@@ -53,7 +54,17 @@ internal sealed class ConsensusProcessor
             previousModel = result.Model;
             answer = result.Answer;
             results.Add(result);
-            _console.MarkupLine(ResponseParser.GetRevisedAnswer(answer));
+            if (outputAnswers)
+            {
+                _console.MarkupLine(ResponseParser.GetRevisedAnswer(answer));
+            }
+            else
+            {
+                var summaryText = firstModel
+                    ? result.InitialSummary ?? ResponseParser.GetInitialResponseSummary(result.Answer)
+                    : result.ChangeSummary;
+                _console.MarkupLine(summaryText);
+            }
 
             if (firstModel)
             {
