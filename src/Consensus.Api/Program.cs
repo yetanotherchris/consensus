@@ -223,4 +223,9 @@ app.MapGet("/log", (string path) =>
     .WithSummary("Returns the contents of a previous log file.")
     .WithOpenApi();
 
+app.MapGet("/models", () => Results.Json(new { data = Array.Empty<object>() }))
+    .WithName("GetModels")
+    .WithSummary("Returns an empty list of available models.")
+    .WithOpenApi();
+
 app.Run();
