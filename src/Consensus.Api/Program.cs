@@ -12,6 +12,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new() { Title = "Consensus API", Version = "v1" });
 });
+builder.WebHost.UseUrls("http://0.0.0.0:5000", "https://0.0.0.0:5001");
 
 var app = builder.Build();
 
