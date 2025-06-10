@@ -14,7 +14,8 @@ internal sealed class ApiConsoleService : IConsoleService
 
     public T Prompt<T>(IPrompt<T> prompt) => throw new InvalidOperationException("Prompting not supported in API mode.");
 
-    public void MarkupLine(string markup) => Channel.Writer.TryWrite(markup);
+    public void MarkupLine(string markup)
+        => Channel.Writer.TryWrite(markup + "\n");
 
     public async Task StatusAsync(string status, Func<Task> action)
         => await StatusAsync<string>(status, default!, action);
@@ -22,7 +23,7 @@ internal sealed class ApiConsoleService : IConsoleService
     public async Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action)
     {
         var message = string.Format(statusFormat, arg);
-        Channel.Writer.TryWrite($"### {message}");
+        Channel.Writer.TryWrite($"**{message}...**\n");
         await action();
     }
 }

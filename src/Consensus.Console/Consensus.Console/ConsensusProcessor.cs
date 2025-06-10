@@ -104,10 +104,14 @@ internal sealed class ConsensusProcessor
 
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         var finalAnswer = ExtractRevisedAnswer(answer);
-        var fileContent = $"## Answer\n\n{finalAnswer}\n\n## Changes Summary\n\n{summary}\n";
+        var fileContent = TemplateEngine.Render(
+            Templates.AnswerTemplate,
+            new { FinalAnswer = finalAnswer, ChangesSummary = summary });
         await File.WriteAllTextAsync(path, fileContent);
 
-        return new(path, finalAnswer, summary, logPath == string.Empty ? null : logPath);
+        _console.MarkupLine(fileContent);
+
+        return new(path, fileContent, summary, logPath == string.Empty ? null : logPath);
     }
 
     private async Task<string> SummarizeChangesAsync(string model, string answer, string previousAnswer)
