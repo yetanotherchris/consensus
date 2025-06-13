@@ -1,7 +1,5 @@
-## Final Answer
-
+## 📗Final Answer
 {{FinalAnswer}}
 
-## Changes Summary
-
+## Summary of all the changes made
 {{ChangesSummary}}

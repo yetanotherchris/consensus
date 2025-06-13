@@ -2,4 +2,7 @@
 
 {{ Answer }}
 
-**Changes:** {{ ChangeSummary }}
+**📖 Changes:** 
+{{ ChangeSummary }}
+
+---

@@ -1,1 +1,1 @@
-**Querying {{ Model }}...**
+**⏳ Querying {{ Model }}...**
