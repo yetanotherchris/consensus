@@ -21,7 +21,7 @@ internal sealed class ConsensusProcessor
         _logger = logger;
     }
 
-    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel, bool outputAnswers = true, bool logAnswers = false)
+    public async Task<ConsensusResult> RunAsync(string prompt, IReadOnlyList<string> models, LogLevel logLevel, bool outputAnswers = true, bool logAnswers = false, bool outputFinalAnswer = true)
     {
         string answer = prompt;
         string previousModel = string.Empty;
@@ -119,7 +119,10 @@ internal sealed class ConsensusProcessor
             .TrimEnd() + "\n";
         await File.WriteAllTextAsync(path, fileContent);
 
-        _console.MarkupLine(fileContent);
+        if (outputFinalAnswer)
+        {
+            _console.MarkupLine(fileContent);
+        }
 
         return new(path, fileContent, summary, logPath == string.Empty ? null : logPath);
     }
