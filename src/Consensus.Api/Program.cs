@@ -32,7 +32,7 @@ app.MapPost("/consensus", async (ConsensusRequest request) =>
         _ => Consensus.Core.LogLevel.None
     };
 
-    var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
+    var result = await processor.RunAsync(request.Prompt, request.Models, logLevel, outputFinalAnswer: false);
     return new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
 })
     .WithName("CreateConsensus")
@@ -62,7 +62,7 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
     {
         try
         {
-            var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
+            var result = await processor.RunAsync(request.Prompt, request.Models, logLevel, outputFinalAnswer: false);
             finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
@@ -136,7 +136,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
 
     if (!request.Stream)
     {
-        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None);
+        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None, outputFinalAnswer: false);
         var resp = new
         {
             id = Guid.NewGuid().ToString(),
@@ -157,7 +157,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
     {
         try
         {
-        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None, outputAnswers: false, logAnswers: false);
+        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None, outputAnswers: false, logAnswers: false, outputFinalAnswer: false);
             finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)
