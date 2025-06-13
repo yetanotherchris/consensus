@@ -1,6 +1,7 @@
 namespace Consensus.Console;
 
 using Spectre.Console;
+using Consensus.Core;
 
 internal sealed class SpectreConsoleService : IConsoleService
 {

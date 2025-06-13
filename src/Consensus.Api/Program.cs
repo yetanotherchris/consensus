@@ -1,5 +1,4 @@
-using Consensus;
-using Consensus.Console;
+using Consensus.Core;
 using Consensus.Api;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text.Json;
@@ -28,9 +27,9 @@ app.MapPost("/consensus", async (ConsensusRequest request) =>
 
     var logLevel = request.LogLevel?.ToLowerInvariant() switch
     {
-        "minimal" => Consensus.LogLevel.Minimal,
-        "full" => Consensus.LogLevel.Full,
-        _ => Consensus.LogLevel.None
+        "minimal" => Consensus.Core.LogLevel.Minimal,
+        "full" => Consensus.Core.LogLevel.Full,
+        _ => Consensus.Core.LogLevel.None
     };
 
     var result = await processor.RunAsync(request.Prompt, request.Models, logLevel);
@@ -49,9 +48,9 @@ app.MapPost("/consensus/stream", async (ConsensusRequest request, HttpResponse r
 
     var logLevel = request.LogLevel?.ToLowerInvariant() switch
     {
-        "minimal" => Consensus.LogLevel.Minimal,
-        "full" => Consensus.LogLevel.Full,
-        _ => Consensus.LogLevel.None
+        "minimal" => Consensus.Core.LogLevel.Minimal,
+        "full" => Consensus.Core.LogLevel.Full,
+        _ => Consensus.Core.LogLevel.None
     };
 
     response.Headers.Add("Content-Type", "text/event-stream");
@@ -137,7 +136,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
 
     if (!request.Stream)
     {
-        var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None);
+        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None);
         var resp = new
         {
             id = Guid.NewGuid().ToString(),
@@ -158,7 +157,7 @@ app.MapPost("/v1/chat/completions", async (HttpRequest httpRequest, HttpResponse
     {
         try
         {
-        var result = await processor.RunAsync(prompt, models, Consensus.LogLevel.None, outputAnswers: false, logAnswers: false);
+        var result = await processor.RunAsync(prompt, models, Consensus.Core.LogLevel.None, outputAnswers: false, logAnswers: false);
             finalResponse = new ConsensusResponse(result.Path, result.Answer, result.ChangesSummary, result.LogPath);
         }
         catch (Exception ex)

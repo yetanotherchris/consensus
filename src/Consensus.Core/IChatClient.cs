@@ -1,4 +1,4 @@
-namespace Consensus;
+namespace Consensus.Core;
 
 using System.Collections.Generic;
 using System.Threading.Tasks;

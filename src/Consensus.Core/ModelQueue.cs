@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using OpenAI.Chat;
-using Consensus.Console;
+using Consensus.Core;
 
-namespace Consensus;
+namespace Consensus.Core;
 
 internal sealed class ModelQueue
 {

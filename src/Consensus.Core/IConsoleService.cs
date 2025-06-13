@@ -1,8 +1,8 @@
-namespace Consensus.Console;
+namespace Consensus.Core;
 
 using Spectre.Console;
 
-internal interface IConsoleService
+public interface IConsoleService
 {
     T Ask<T>(string prompt);
     T Prompt<T>(IPrompt<T> prompt);

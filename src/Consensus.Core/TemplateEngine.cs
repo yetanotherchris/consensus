@@ -1,6 +1,6 @@
 using Scriban;
 
-namespace Consensus;
+namespace Consensus.Core;
 
 internal static class TemplateEngine
 {

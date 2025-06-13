@@ -2,8 +2,7 @@ using System;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Spectre.Console;
-using Consensus.Console;
-using Consensus;
+using Consensus.Core;
 
 namespace Consensus.Api;
 

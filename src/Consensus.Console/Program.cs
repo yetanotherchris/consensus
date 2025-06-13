@@ -1,8 +1,7 @@
 using Spectre.Console.Cli;
 using Spectre.Console;
 using Microsoft.Extensions.Logging;
-using Consensus;
-using Consensus.Console;
+using Core = Consensus.Core;
 
 namespace Consensus.Console;
 
@@ -18,7 +17,7 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
     {
         var console = new SpectreConsoleService();
         ILogger<ConsensusCommand> logger = new AnsiConsoleLogger<ConsensusCommand>();
-        ILogger<ConsensusProcessor> processorLogger = new AnsiConsoleLogger<ConsensusProcessor>();
+        ILogger<Core.ConsensusProcessor> processorLogger = new AnsiConsoleLogger<Core.ConsensusProcessor>();
 
         var prompt = settings.Prompt ?? console.Ask<string>("Enter your question:");
 
@@ -54,15 +53,15 @@ public sealed class ConsensusCommand : AsyncCommand<ConsensusCommand.Settings>
 
         var logLevel = logChoice switch
         {
-            "Minimal" => LogLevel.Minimal,
-            "Full" => LogLevel.Full,
-            _ => LogLevel.None
+            "Minimal" => Core.LogLevel.Minimal,
+            "Full" => Core.LogLevel.Full,
+            _ => Core.LogLevel.None
         };
 
-        var client = new OpenRouterClient(apiKey);
-        var processor = new ConsensusProcessor(client, console, processorLogger);
+        var client = new Core.OpenRouterClient(apiKey);
+        var processor = new Core.ConsensusProcessor(client, console, processorLogger);
 
-        var result = await processor.RunAsync(prompt, models, logLevel, logAnswers: logLevel == Consensus.LogLevel.Full);
+        var result = await processor.RunAsync(prompt, models, logLevel, logAnswers: logLevel == Core.LogLevel.Full);
 
         logger.LogInformation("\n[bold]Changes Summary:[/]\n{Summary}\n", result.ChangesSummary);
         logger.LogInformation("[bold]Full answer written to:[/]\n{Path}\n", result.Path);
