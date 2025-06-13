@@ -54,7 +54,15 @@ internal sealed class ConsensusProcessor
             results.Add(result);
             if (outputAnswers)
             {
-                _console.MarkupLine(ResponseParser.GetRevisedAnswer(answer));
+                var markup = TemplateEngine.Render(
+                    Templates.ResponseTemplate,
+                    new
+                    {
+                        Model = result.Model,
+                        Answer = ResponseParser.GetRevisedAnswer(result.Answer),
+                        ChangeSummary = result.ChangeSummary
+                    });
+                _console.MarkupLine(markup);
             }
             else
             {
