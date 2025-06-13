@@ -10,4 +10,7 @@ internal static class Templates
 
     public static readonly string AnswerTemplate =
         ResourceHelper.GetString("Consensus.Core.Resources.AnswerTemplate.md");
+
+    public static readonly string ResponseTemplate =
+        ResourceHelper.GetString("Consensus.Core.Resources.ResponseTemplate.md");
 }
