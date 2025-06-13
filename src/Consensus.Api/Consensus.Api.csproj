@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Consensus.Console\Consensus.Console.csproj" />
+    <ProjectReference Include="..\Consensus.Core\Consensus.Core.csproj" />
   </ItemGroup>
 
 </Project>

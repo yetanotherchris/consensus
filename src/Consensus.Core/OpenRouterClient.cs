@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using OpenAI.Chat;
 
-namespace Consensus;
+namespace Consensus.Core;
 
 internal sealed class OpenRouterClient
 {

@@ -1,4 +1,4 @@
-namespace Consensus;
+namespace Consensus.Core;
 
 using System;
 using System.Collections.Generic;

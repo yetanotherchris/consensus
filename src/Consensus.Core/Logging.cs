@@ -1,4 +1,4 @@
-namespace Consensus;
+namespace Consensus.Core;
 
 internal enum LogLevel
 {
