@@ -154,6 +154,7 @@ public class ConsensusProcessorTests
     {
         public string QueryingTemplate => "**⏳ Querying {{ Model }}...**";
         public string ModelSummaryTemplate => "{{ ModelSummary }}\n\n---";
+        public string InitialAnswerTemplate => "Initial answer generated. {{ InitialAnswer }}";
         public string AnswerTemplate => "## 📗Final Answer\n{{FinalAnswer}}\n\n## Summary of all the changes made\n{{ChangesSummary}}";
         public string ResponseTemplate => "### {{ Model }}\n\n{{ Answer }}\n\n**📖 Changes:**\n{{ ChangeSummary }}\n\n---";
     }
