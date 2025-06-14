@@ -77,7 +77,14 @@ internal sealed class ConsensusProcessor
 
             if (firstModel)
             {
-                _console.MarkupLine("Initial answer generated.");
+                var initialMarkup = TemplateEngine.Render(
+                    _console.Templates.InitialAnswerTemplate,
+                    new
+                    {
+                        Model = result.Model,
+                        InitialAnswer = ResponseParser.GetInitialResponse(result.Answer)
+                    });
+                _console.MarkupLine(initialMarkup);
                 var initialSummary = result.InitialSummary ?? ResponseParser.GetInitialResponseSummary(result.Answer);
                 _logger.LogInformation("\n[bold]{Model} answer summary:[/]\n- {Summary}\n", result.Model, initialSummary);
             }
