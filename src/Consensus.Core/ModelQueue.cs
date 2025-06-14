@@ -11,9 +11,9 @@ internal sealed class ModelQueue
 {
     private readonly Queue<string> _models;
     private readonly OpenRouterClient _client;
-    private readonly IConsoleService _console;
+    private readonly IModelQueryService _console;
 
-    public ModelQueue(IEnumerable<string> models, OpenRouterClient client, IConsoleService console)
+    public ModelQueue(IEnumerable<string> models, OpenRouterClient client, IModelQueryService console)
     {
         _models = new Queue<string>(models);
         _client = client;

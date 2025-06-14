@@ -3,8 +3,9 @@ namespace Consensus.Console;
 using Spectre.Console;
 using Consensus.Core;
 
-internal sealed class SpectreConsoleService : IConsoleService
+internal sealed class SpectreConsoleService : IModelQueryService
 {
+    public ITemplate Templates { get; } = new ConsoleTemplates();
     public T Ask<T>(string prompt) => AnsiConsole.Ask<T>(prompt);
 
     public T Prompt<T>(IPrompt<T> prompt) => AnsiConsole.Prompt(prompt);

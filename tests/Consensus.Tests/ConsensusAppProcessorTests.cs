@@ -140,13 +140,22 @@ public class ConsensusProcessorTests
         }
     }
 
-    private sealed class StubConsoleService : IConsoleService
+    private sealed class StubConsoleService : IModelQueryService
     {
+        public ITemplate Templates { get; } = new StubTemplates();
         public T Ask<T>(string prompt) => throw new NotImplementedException();
         public T Prompt<T>(IPrompt<T> prompt) => throw new NotImplementedException();
         public void MarkupLine(string markup) { }
         public Task StatusAsync(string status, Func<Task> action) => action();
         public Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action) => action();
+    }
+
+    private sealed class StubTemplates : ITemplate
+    {
+        public string QueryingTemplate => "**⏳ Querying {{ Model }}...**";
+        public string ModelSummaryTemplate => "{{ ModelSummary }}\n\n---";
+        public string AnswerTemplate => "## 📗Final Answer\n{{FinalAnswer}}\n\n## Summary of all the changes made\n{{ChangesSummary}}";
+        public string ResponseTemplate => "### {{ Model }}\n\n{{ Answer }}\n\n**📖 Changes:**\n{{ ChangeSummary }}\n\n---";
     }
 
     private sealed class StubChatClient : IChatClient
