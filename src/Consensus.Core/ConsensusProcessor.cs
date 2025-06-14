@@ -11,10 +11,10 @@ namespace Consensus.Core;
 internal sealed class ConsensusProcessor
 {
     private readonly OpenRouterClient _client;
-    private readonly IConsoleService _console;
+    private readonly IModelQueryService _console;
     private readonly ILogger<ConsensusProcessor> _logger;
 
-    public ConsensusProcessor(OpenRouterClient client, IConsoleService console, ILogger<ConsensusProcessor> logger)
+    public ConsensusProcessor(OpenRouterClient client, IModelQueryService console, ILogger<ConsensusProcessor> logger)
     {
         _client = client;
         _console = console;
@@ -55,7 +55,7 @@ internal sealed class ConsensusProcessor
             if (outputAnswers)
             {
                 var markup = TemplateEngine.Render(
-                    Templates.ResponseTemplate,
+                    _console.Templates.ResponseTemplate,
                     new
                     {
                         Model = result.Model,
@@ -70,7 +70,7 @@ internal sealed class ConsensusProcessor
                     ? result.InitialSummary ?? ResponseParser.GetInitialResponseSummary(result.Answer)
                     : result.ChangeSummary;
                 var summaryMarkup = TemplateEngine.Render(
-                    Templates.ModelSummaryTemplate,
+                    _console.Templates.ModelSummaryTemplate,
                     new { ModelSummary = summaryText, Model = result.Model });
                 _console.MarkupLine(summaryMarkup);
             }
@@ -114,7 +114,7 @@ internal sealed class ConsensusProcessor
         var path = Path.Combine(Directory.GetCurrentDirectory(), $"answer_{baseName}.md");
         var finalAnswer = ExtractRevisedAnswer(answer);
         var fileContent = TemplateEngine.Render(
-            Templates.AnswerTemplate,
+            _console.Templates.AnswerTemplate,
             new { FinalAnswer = finalAnswer, ChangesSummary = summary })
             .TrimEnd() + "\n";
         await File.WriteAllTextAsync(path, fileContent);

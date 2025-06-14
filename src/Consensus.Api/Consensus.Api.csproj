@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Consensus.Core\Consensus.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.md" />
+  </ItemGroup>
+
 </Project>

@@ -2,8 +2,9 @@ namespace Consensus.Core;
 
 using Spectre.Console;
 
-public interface IConsoleService
+public interface IModelQueryService
 {
+    ITemplate Templates { get; }
     T Ask<T>(string prompt);
     T Prompt<T>(IPrompt<T> prompt);
     void MarkupLine(string markup);

@@ -6,10 +6,11 @@ using Consensus.Core;
 
 namespace Consensus.Api;
 
-internal sealed class ApiConsoleService : IConsoleService
+internal sealed class ApiConsoleService : IModelQueryService
 {
     public Channel<string> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<string>();
     private string? _lastStatus;
+    public ITemplate Templates { get; } = new ApiTemplates();
 
     public T Ask<T>(string prompt) => throw new InvalidOperationException("Prompting not supported in API mode.");
 
