@@ -9,6 +9,7 @@ namespace Consensus.Api;
 internal sealed class ApiConsoleService : IConsoleService
 {
     public Channel<string> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<string>();
+    private string? _lastStatus;
 
     public T Ask<T>(string prompt) => throw new InvalidOperationException("Prompting not supported in API mode.");
 
@@ -22,10 +23,25 @@ internal sealed class ApiConsoleService : IConsoleService
 
     public async Task StatusAsync<T>(string statusFormat, T arg, Func<Task> action)
     {
-        var markup = TemplateEngine.Render(
-            Templates.QueryingTemplate,
-            new { Model = arg });
-        Channel.Writer.TryWrite(markup + "\n");
+        string markup;
+        if (statusFormat == "Querying {0}")
+        {
+            markup = TemplateEngine.Render(
+                Templates.QueryingTemplate,
+                new { Model = arg });
+        }
+        else
+        {
+            var formatted = string.Format(statusFormat, arg);
+            markup = $"**⏳ {formatted}...**";
+        }
+
+        if (markup != _lastStatus)
+        {
+            Channel.Writer.TryWrite(markup + "\n");
+            _lastStatus = markup;
+        }
+
         await action();
     }
 }
