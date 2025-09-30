@@ -1,8 +1,0 @@
-### {{ Model }}
-
-{{ Answer }}
-
-**📖 Changes:** 
-{{ ChangeSummary }}
-
----

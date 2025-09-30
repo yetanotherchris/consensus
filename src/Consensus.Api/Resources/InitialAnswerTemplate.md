@@ -1,2 +1,0 @@
-**✅ Initial answer generated.**
-{{ InitialAnswer }}
