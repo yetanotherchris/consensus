@@ -1,3 +1,5 @@
+using ConsensusAgent.Models;
+
 namespace ConsensusAgent.Services;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace ConsensusAgent.Services;
 public interface IOutputService
 {
     /// <summary>
-    /// Save the final consensus to a file
+    /// Save the consensus result to a file in Markdown format
     /// </summary>
-    Task SaveConsensusAsync(string consensus, string filePath);
+    Task SaveConsensusResultAsync(ConsensusResult result, string filePath);
 }

@@ -1,13 +1,14 @@
+using System.Diagnostics;
 using System.Text;
 using ConsensusAgent.Configuration;
 using ConsensusAgent.Logging;
+using ConsensusAgent.Models;
 using ConsensusAgent.Services;
-using ConsensusAgent.Utilities;
 
 namespace ConsensusAgent;
 
 /// <summary>
-/// Orchestrates the entire consensus building process
+/// Orchestrates the parallel-then-synthesize consensus building process
 /// </summary>
 public class ConsensusOrchestrator
 {
@@ -15,185 +16,137 @@ public class ConsensusOrchestrator
     private readonly SimpleLogger _logger;
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
-    private readonly IVotingService _votingService;
+    private readonly ISynthesizerService _synthesizerService;
     private readonly IOutputService _outputService;
-    private readonly List<string> _conversationHistory = new();
 
     public ConsensusOrchestrator(
         ConsensusConfiguration config,
         SimpleLogger logger,
         IAgentService agentService,
         IPromptBuilder promptBuilder,
-        IVotingService votingService,
+        ISynthesizerService synthesizerService,
         IOutputService outputService)
     {
         _config = config;
         _logger = logger;
         _agentService = agentService;
         _promptBuilder = promptBuilder;
-        _votingService = votingService;
+        _synthesizerService = synthesizerService;
         _outputService = outputService;
     }
 
-    public async Task<string> BuildConsensusAsync(string initialPrompt)
+    /// <summary>
+    /// Execute the parallel-then-synthesize consensus workflow
+    /// </summary>
+    public async Task<ConsensusResult> GetConsensusAsync(string prompt)
     {
-        _logger.LogInformation("=== CONSENSUS BUILDING STARTED ===");
+        var stopwatch = Stopwatch.StartNew();
+        
+        _logger.LogInformation("=== CONSENSUS BUILDING STARTED (Parallel-then-Synthesize) ===");
         _logger.LogInformation("Models: {0}", string.Join(", ", _config.Models));
-        _logger.LogInformation("Rounds: {0}", _config.MaxRounds);
-        _logger.LogInformation("Timeout per query: {0}s", _config.QueryTimeoutSeconds);
+        _logger.LogInformation("Timeout per agent: {0}s", _config.AgentTimeoutSeconds);
+        _logger.LogInformation("Minimum agents required: {0}", _config.MinimumAgentsRequired);
 
-        // Initialize agents for each model
+        // Create consensus request
+        var request = new ConsensusRequest
+        {
+            Prompt = prompt,
+            Domain = _config.Domain,
+            IncludeReasoning = true,
+            IncludeConfidence = true,
+            IncludeTheoreticalFramework = false,
+            MinimumAgents = _config.MinimumAgentsRequired
+        };
+
+        // Initialize agents
         _logger.LogInformation("Initializing agents for each model...");
         await _agentService.InitializeAgentsAsync(_config.Models, _config.ApiEndpoint, _config.ApiKey);
-        _logger.LogInformation("✓ Initialized {AgentCount} agent contexts", _config.Models.Length);
+        _logger.LogInformation("✓ Initialized {0} agent contexts", _config.Models.Length);
 
-        string currentPrompt = initialPrompt;
+        // Phase 1: Divergent Collection (Parallel)
+        _logger.LogInformation("=== PHASE 1: DIVERGENT COLLECTION (PARALLEL) ===");
+        var responses = await CollectResponsesAsync(request);
 
-        // Run consensus rounds
-        for (int round = 1; round <= _config.MaxRounds; round++)
+        // Check minimum threshold
+        if (responses.Count < _config.MinimumAgentsRequired)
         {
-            _logger.LogInformation("=== ROUND {0}/{1} ===", round, _config.MaxRounds);
-
-            var roundResponses = await QueryAllModelsAsync(currentPrompt, round);
-
-            // Voting phase (skip on last round)
-            if (round < _config.MaxRounds && roundResponses.Count > 0)
-            {
-                _logger.LogInformation("Conducting vote...");
-                string vote = await ConductVoteWithTimeoutAsync(roundResponses);
-                
-                // Update prompt for next round
-                currentPrompt = _promptBuilder.BuildNextRoundPrompt(initialPrompt, roundResponses, vote, round);
-            }
-            else if (roundResponses.Count == 0)
-            {
-                _logger.LogWarning("Round {0} had no successful responses", round);
-            }
+            throw new InvalidOperationException(
+                $"Only {responses.Count} of {_config.Models.Length} agents responded successfully. " +
+                $"Minimum required: {_config.MinimumAgentsRequired}");
         }
 
-        // Generate final consensus
-        _logger.LogInformation("Generating final consensus...");
-        
-        string finalConsensus = await GenerateFinalConsensusAsync(initialPrompt);
-        
-        _logger.LogInformation("=== CONSENSUS BUILDING COMPLETED ===");
+        _logger.LogInformation("✓ Collected {0} responses (minimum: {1})", 
+            responses.Count, _config.MinimumAgentsRequired);
 
-        return finalConsensus;
+        // Phase 2: Convergent Synthesis
+        _logger.LogInformation("=== PHASE 2: CONVERGENT SYNTHESIS ===");
+        using var synthesisCts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds * 2));
+        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, synthesisCts.Token);
+
+        stopwatch.Stop();
+        result.TotalProcessingTime = stopwatch.Elapsed;
+
+        _logger.LogInformation("=== CONSENSUS BUILDING COMPLETED ===");
+        _logger.LogInformation("Total time: {0:F2}s", result.TotalProcessingTime.TotalSeconds);
+        _logger.LogInformation("Consensus level: {0}", result.ConsensusLevel);
+
+        return result;
     }
 
-    private async Task<List<(string model, string response)>> QueryAllModelsAsync(string prompt, int round)
+    /// <summary>
+    /// Collect responses from all models in parallel (Phase 1: Divergent)
+    /// </summary>
+    public async Task<List<ModelResponse>> CollectResponsesAsync(ConsensusRequest request)
     {
-        var roundResponses = new List<(string model, string response)>();
+        // Build enhanced prompt
+        string enhancedPrompt = _promptBuilder.BuildEnhancedDivergentPrompt(request);
+        
+        _logger.LogInformation("Querying {0} models in parallel...", _config.Models.Length);
 
-        foreach (string model in _config.Models)
+        // Create tasks for all models with individual timeouts
+        var queryTasks = _config.Models.Select(async model =>
         {
-            _logger.LogInformation("Querying {Model}...", model);
-            
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.QueryTimeoutSeconds));
-                string response = await _agentService.QueryModelAsync(model, prompt, cts.Token);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds));
+                _logger.LogInformation("Querying {0}...", model);
                 
-                roundResponses.Add((model, response));
-                _logger.LogInformation("✓ {Model} completed successfully", model);
+                var response = await _agentService.QueryModelWithResponseAsync(model, enhancedPrompt, cts.Token);
                 
-                // Add to conversation history
-                _conversationHistory.Add($"[{model}] {response}");
+                _logger.LogInformation("✓ {0} completed successfully (Confidence: {1:P0})", 
+                    model, response.ConfidenceScore);
                 
-                // Log with truncation for readability
-                string truncatedResponse = TextHelper.Truncate(response, 200);
-                _logger.LogInformation("Model: {0} | Response: {1}", model, truncatedResponse);
+                return (success: true, response: response);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("Model {0} timed out after {1}s - skipping", model, _config.QueryTimeoutSeconds);
+                _logger.LogWarning("✗ {0} timed out after {1}s", model, _config.AgentTimeoutSeconds);
+                return (success: false, response: (ModelResponse?)null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Model {0} failed", model);
+                _logger.LogError(ex, "✗ {0} failed", model);
+                return (success: false, response: (ModelResponse?)null);
             }
-        }
+        }).ToList();
 
-        return roundResponses;
+        // Wait for all tasks to complete (or timeout)
+        var results = await Task.WhenAll(queryTasks);
+
+        // Extract successful responses
+        var responses = results
+            .Where(r => r.success && r.response != null)
+            .Select(r => r.response!)
+            .ToList();
+
+        return responses;
     }
 
-    private async Task<string> ConductVoteWithTimeoutAsync(List<(string model, string response)> responses)
+    /// <summary>
+    /// Save consensus result to file
+    /// </summary>
+    public async Task SaveConsensusAsync(ConsensusResult result)
     {
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.QueryTimeoutSeconds));
-            var vote = await _votingService.ConductVoteAsync(responses, _config.Models[0], cts.Token);
-            
-            _logger.LogInformation("Vote result: {0}", TextHelper.Truncate(vote, 150));
-            
-            return vote;
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Vote timed out - proceeding without vote result");
-            return "Vote timed out";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Vote failed");
-            return "Vote failed";
-        }
-    }
-
-    private async Task<string> GenerateFinalConsensusAsync(string originalPrompt)
-    {
-        try
-        {
-            // Double timeout for final consensus
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.QueryTimeoutSeconds * 2));
-            
-            string consensusPrompt = _promptBuilder.BuildFinalConsensusPrompt(
-                originalPrompt,
-                _conversationHistory,
-                _config.MaxRounds);
-            
-            string consensus = await _agentService.QueryModelOneOffAsync(
-                _config.Models[0],
-                consensusPrompt,
-                _config.ApiEndpoint,
-                _config.ApiKey,
-                cts.Token);
-            
-            _logger.LogInformation("Final consensus generated: {0}", TextHelper.Truncate(consensus, 300));
-            
-            // Format as Markdown with metadata
-            return FormatConsensusOutput(consensus);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Final consensus generation timed out");
-            return "# Consensus Generation Timeout\n\nThe final consensus generation timed out. Please review the conversation log for individual model responses.";
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Final consensus generation failed");
-            return $"# Consensus Generation Error\n\nAn error occurred: {ex.Message}";
-        }
-    }
-
-    private string FormatConsensusOutput(string consensus)
-    {
-        var output = new StringBuilder();
-        output.AppendLine("# Consensus Response");
-        output.AppendLine();
-        output.AppendLine($"**Generated:** {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        output.AppendLine($"**Models Consulted:** {_config.Models.Length}");
-        output.AppendLine($"**Discussion Rounds:** {_config.MaxRounds}");
-        output.AppendLine();
-        output.AppendLine("---");
-        output.AppendLine();
-        output.AppendLine(consensus);
-
-        return output.ToString();
-    }
-
-    public async Task SaveConsensusAsync(string consensus)
-    {
-        await _outputService.SaveConsensusAsync(consensus, _config.ConsensusFile);
+        await _outputService.SaveConsensusResultAsync(result, _config.ConsensusFile);
     }
 }

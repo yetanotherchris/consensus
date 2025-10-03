@@ -1,3 +1,99 @@
+# Initial prompt
+I'm creating a consensus application that uses Microsoft.Agents.AI.
+
+The idea is I provide a prompt, and a set of models decide on the best answer - i'll be using it primarily for Psychology questions but it's meant to be generic.
+
+I need your feedback to brainstorm.
+
+Firstly has this pattern and problem already been solved with a pattern I can copy
+Should it provide the initial prompt to every LLM to start with? And then collate the answers and somehow send them around?
+Should one LLM provide an answer, and it then asks the next LLM what it thinks about this answer, and so on, going around in a circle?
+The third option replicates how humans might do it, an expert with perhaps a research assistant might research a topic, and then send it around for feedback and improvements.
+
+But in this case, it assumes the first LLM is an expert, in my system, when they might produce a garbage answer that is iterated on to be less garbage, rather than it being a brilliant answer to begin with that is iterated on.
+---------
+Great project! Let me address your questions:
+
+## 1. Existing Patterns
+
+Yes, there are several established patterns you can learn from:
+
+- **Multi-Agent Debate/Discussion**: Systems like MIT's "Encouraging Divergent Thinking in LLMs" and "Self-Consistency with Chain-of-Thought" use multiple model instances debating
+- **Ensemble Methods**: Simple voting/averaging approaches (similar to Random Forests for LLMs)
+- **Mixture of Agents (MoA)**: Recent pattern where proposer agents generate responses and aggregator agents synthesize them
+- **Constitutional AI/Debate**: Models critique and refine each other's outputs
+- **Medprompt/Medprompt+**: Uses ensembles specifically for expert domains (originally medical)
+
+## 2. Architecture Feedback
+
+Your three options each have merit, but I'd actually suggest a **hybrid fourth approach**:
+
+### **Parallel-then-Synthesize (Recommended)**
+1. Send the same prompt to all models simultaneously
+2. Collect all responses
+3. Have an aggregator phase that either:
+   - Uses a "judge" LLM to evaluate and synthesize
+   - Uses majority voting for clear-cut answers
+   - Identifies consensus points and disagreements explicitly
+
+**Why this works better:**
+- Avoids the "garbage in, garbage out" problem you identified
+- Gets diverse perspectives without anchoring bias
+- More parallelizable (faster)
+- For psychology questions, you get different theoretical frameworks represented
+
+### **Your Option 2 (Parallel only)** 
+Decent but lacks synthesis. You'd need human interpretation of N different answers.
+
+### **Your Option 3 (Sequential)**
+Problems you correctly identified:
+- First-mover bias (anchoring)
+- Garbage amplification
+- Sequential = slower
+- Later models may just defer to earlier ones
+
+## 3. Recommended Implementation
+
+```
+Phase 1: DIVERGENT (Parallel)
+├─ Model A → Answer A
+├─ Model B → Answer B  
+├─ Model C → Answer C
+└─ Model D → Answer D
+
+Phase 2: CONVERGENT (Synthesis)
+└─ Judge Model receives:
+   - Original question
+   - All answers A, B, C, D
+   - Task: Identify consensus, note disagreements,
+           synthesize best response with reasoning
+```
+
+**For Psychology specifically**, you might add:
+- Ask models to cite their theoretical framework (CBT, psychodynamic, etc.)
+- The judge can note when answers reflect different valid schools of thought
+- Include confidence scores
+
+## 4. Additional Considerations
+
+**Prompt Engineering:**
+- Ask models to explain their reasoning (chain-of-thought)
+- Request citations or theoretical backing
+- Ask for confidence levels
+
+**Dealing with Disagreement:**
+- Don't just pick the "winner" - surface the disagreement
+- In psychology, theoretical disagreements are often legitimate
+- Show the user "3/4 models agreed on X, but Model B raised concern Y"
+
+**Model Selection:**
+- Use genuinely different models (GPT-4, Claude, Gemini, etc.) not just different temperatures
+- Different architectures = different biases = better ensemble
+
+Would you like me to sketch out some actual code structure or discuss how to handle the aggregation logic?
+--------
+> Can you provide your recommendation as a markdown specification document I can use with Copilot
+---------
 # LLM Consensus Application Specification
 
 ## Overview

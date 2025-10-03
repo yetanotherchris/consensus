@@ -7,9 +7,6 @@ namespace ConsensusAgent;
 
 class Program
 {
-    private const int MaxRounds = 5;
-    private const int QueryTimeoutSeconds = 90;
-
     static async Task<int> Main(string[] args)
     {
         try
@@ -37,8 +34,7 @@ class Program
                 ApiEndpoint = settings.ApiEndpoint,
                 ApiKey = settings.ApiKey,
                 Models = settings.Models,
-                MaxRounds = MaxRounds,
-                QueryTimeoutSeconds = QueryTimeoutSeconds,
+                MinimumAgentsRequired = Math.Max(3, settings.Models.Length * 2 / 3), // At least 2/3 of models
                 OutputDirectory = outputDir
             };
 
@@ -50,20 +46,22 @@ class Program
             // Get logger for Program
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
-            logger.LogInformation("Starting consensus building with {ModelCount} models over {MaxRounds} rounds...", settings.Models.Length, MaxRounds);
-            logger.LogInformation("Total requests: {TotalRequests}", settings.Models.Length * MaxRounds);
-            logger.LogInformation("Query timeout: {QueryTimeout} seconds", QueryTimeoutSeconds);
+            logger.LogInformation("Starting parallel-then-synthesize consensus with {ModelCount} models...", settings.Models.Length);
+            logger.LogInformation("Agent timeout: {AgentTimeout} seconds", config.AgentTimeoutSeconds);
+            logger.LogInformation("Minimum agents required: {MinimumAgents}", config.MinimumAgentsRequired);
             logger.LogInformation("📝 Log file: {LogFile}", config.LogFile);
 
             // Get orchestrator and run consensus process
             var orchestrator = serviceProvider.GetRequiredService<ConsensusOrchestrator>();
-            string consensus = await orchestrator.BuildConsensusAsync(prompt);
+            var result = await orchestrator.GetConsensusAsync(prompt);
 
             // Save consensus output
-            await orchestrator.SaveConsensusAsync(consensus);
+            await orchestrator.SaveConsensusAsync(result);
 
             logger.LogInformation("✓ Consensus saved to: {ConsensusFile}", config.ConsensusFile);
             logger.LogInformation("✓ Conversation log saved to: {LogFile}", config.LogFile);
+            logger.LogInformation("✓ Consensus level: {ConsensusLevel}", result.ConsensusLevel);
+            logger.LogInformation("✓ Processing time: {ProcessingTime:F2}s", result.TotalProcessingTime.TotalSeconds);
 
             return 0;
         }

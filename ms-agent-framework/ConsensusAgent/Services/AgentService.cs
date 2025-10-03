@@ -2,7 +2,9 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ClientModel;
+using System.Text.RegularExpressions;
 using ConsensusAgent.Logging;
+using ConsensusAgent.Models;
 
 namespace ConsensusAgent.Services;
 
@@ -41,7 +43,7 @@ public class AgentService : IAgentService
         await Task.CompletedTask;
     }
 
-    public async Task<string> QueryModelAsync(string model, string prompt, CancellationToken cancellationToken = default)
+    public async Task<ModelResponse> QueryModelWithResponseAsync(string model, string prompt, CancellationToken cancellationToken = default)
     {
         if (!_modelContexts.TryGetValue(model, out var context))
         {
@@ -49,6 +51,7 @@ public class AgentService : IAgentService
         }
 
         var (agent, thread) = context;
+        var startTime = DateTime.UtcNow;
         
         // Create a task for the agent query
         var queryTask = Task.Run(async () =>
@@ -70,8 +73,106 @@ public class AgentService : IAgentService
             throw new OperationCanceledException($"Query to {model} timed out");
         }
         
-        // Return the result
-        return await queryTask;
+        // Get the raw response
+        string rawResponse = await queryTask;
+        
+        // Parse into ModelResponse
+        return ParseModelResponse(model, rawResponse, startTime);
+    }
+
+    private ModelResponse ParseModelResponse(string modelName, string rawResponse, DateTime timestamp)
+    {
+        // Try to extract reasoning and confidence from the response
+        string answer = rawResponse;
+        string reasoning = string.Empty;
+        double confidence = 0.0;
+
+        // Look for reasoning section (various possible formats)
+        var reasoningMatch = Regex.Match(rawResponse, @"(?:Reasoning|My reasoning|Step-by-step):\s*(.+?)(?=(?:Confidence|$))", 
+            RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        if (reasoningMatch.Success)
+        {
+            reasoning = reasoningMatch.Groups[1].Value.Trim();
+            // Remove reasoning from answer
+            answer = rawResponse.Replace(reasoningMatch.Value, "").Trim();
+        }
+
+        // Look for confidence score - try XML format first, then fallback to other patterns
+        // Pattern 0 (PREFERRED): XML format like <confidence>0.85</confidence>
+        var xmlConfidenceMatch = Regex.Match(rawResponse, @"<confidence>([\d.]+)</confidence>", 
+            RegexOptions.IgnoreCase);
+        
+        if (xmlConfidenceMatch.Success && double.TryParse(xmlConfidenceMatch.Groups[1].Value, out double xmlConfValue))
+        {
+            // If value is between 0 and 1, use it directly; if between 0 and 100, convert to 0-1 range
+            if (xmlConfValue >= 0 && xmlConfValue <= 1)
+            {
+                confidence = xmlConfValue;
+            }
+            else if (xmlConfValue > 1 && xmlConfValue <= 100)
+            {
+                confidence = xmlConfValue / 100.0;
+            }
+            
+            // Remove XML confidence tag from answer
+            answer = rawResponse.Replace(xmlConfidenceMatch.Value, "").Trim();
+        }
+        else
+        {
+            // Fallback to legacy patterns for backward compatibility
+            Match confidenceMatch;
+            
+            // Pattern 1: "Confidence: 85%" or "Confidence level: 85"
+            confidenceMatch = Regex.Match(rawResponse, @"(?:Confidence|Confidence level):\s*(\d+)%?", 
+                RegexOptions.IgnoreCase);
+            
+            // Pattern 2: Numbered section like "3. Your confidence level (0-100%)\n\n95%" or "### 3. Confidence Level\n\n**95%**"
+            if (!confidenceMatch.Success)
+            {
+                confidenceMatch = Regex.Match(rawResponse, 
+                    @"(?:^|\n)\s*(?:\d+\.|###)\s*(?:Your\s+)?[Cc]onfidence\s+[Ll]evel[^\n]*\n+\s*\*{0,2}(\d+)%?\*{0,2}", 
+                    RegexOptions.Multiline);
+            }
+            
+            // Pattern 3: Standalone percentage near the end of response (like "**95%**" or "85%" on its own line)
+            if (!confidenceMatch.Success)
+            {
+                // Look for standalone percentage in the last 500 characters
+                var endSection = rawResponse.Length > 500 ? rawResponse.Substring(rawResponse.Length - 500) : rawResponse;
+                confidenceMatch = Regex.Match(endSection, 
+                    @"(?:^|\n)\s*\*{0,2}(\d{1,3})%\*{0,2}\s*(?:\n|$)", 
+                    RegexOptions.Multiline);
+            }
+            
+            // Pattern 4: Embedded in text like "confidence (80%)" or "with 85% confidence"
+            if (!confidenceMatch.Success)
+            {
+                confidenceMatch = Regex.Match(rawResponse, 
+                    @"(?:confidence|confident)(?:\s+is|\s+level)?[:\s(]+(\d+)%", 
+                    RegexOptions.IgnoreCase);
+            }
+            
+            if (confidenceMatch.Success && int.TryParse(confidenceMatch.Groups[1].Value, out int confValue))
+            {
+                // Validate confidence is in reasonable range (0-100)
+                if (confValue >= 0 && confValue <= 100)
+                {
+                    confidence = confValue / 100.0;
+                    // Remove confidence from answer
+                    answer = rawResponse.Replace(confidenceMatch.Value, "").Trim();
+                }
+            }
+        }
+
+        return new ModelResponse
+        {
+            ModelName = modelName,
+            Answer = answer,
+            Reasoning = reasoning,
+            ConfidenceScore = confidence,
+            Timestamp = timestamp,
+            TokensUsed = 0 // Not currently tracked
+        };
     }
 
     public async Task<string> QueryModelOneOffAsync(string model, string prompt, string apiEndpoint, string apiKey, CancellationToken cancellationToken = default)

@@ -1,4 +1,6 @@
 anthropic/claude-sonnet-4
 x-ai/grok-3
-deepseek/deepseek-chat-v3.1:free
+qwen/qwen3-vl-235b-a22b-thinking
+alibaba/tongyi-deepresearch-30b-a3b
 google/gemini-2.5-pro
+openai/gpt-5

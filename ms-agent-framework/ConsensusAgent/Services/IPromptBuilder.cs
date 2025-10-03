@@ -1,22 +1,19 @@
+using ConsensusAgent.Models;
+
 namespace ConsensusAgent.Services;
 
 /// <summary>
-/// Service for building prompts for different consensus scenarios
+/// Service for building prompts for the parallel-then-synthesize consensus pattern
 /// </summary>
 public interface IPromptBuilder
 {
     /// <summary>
-    /// Build a prompt for the next round based on previous responses and vote
+    /// Build an enhanced prompt for the divergent phase requesting reasoning, confidence, etc.
     /// </summary>
-    string BuildNextRoundPrompt(string originalPrompt, List<(string model, string response)> previousResponses, string voteResult, int currentRound);
+    string BuildEnhancedDivergentPrompt(ConsensusRequest request);
     
     /// <summary>
-    /// Build a voting prompt to analyze and compare responses
+    /// Build the judge/synthesizer prompt for the convergent phase
     /// </summary>
-    string BuildVotingPrompt(List<(string model, string response)> responses);
-    
-    /// <summary>
-    /// Build the final consensus generation prompt
-    /// </summary>
-    string BuildFinalConsensusPrompt(string originalPrompt, List<string> conversationHistory, int maxRounds);
+    string BuildJudgeSynthesisPrompt(string originalPrompt, List<ModelResponse> responses);
 }

@@ -34,7 +34,7 @@ public static class ServiceCollectionExtensions
         // Register services as transient (new instance per resolution)
         services.AddTransient<IAgentService, AgentService>();
         services.AddTransient<IPromptBuilder, PromptBuilder>();
-        services.AddTransient<IVotingService, VotingService>();
+        services.AddTransient<ISynthesizerService, SynthesizerService>();
         services.AddTransient<IOutputService, OutputService>();
         services.AddTransient<ConsensusOrchestrator>();
         
