@@ -1,0 +1,796 @@
+# LLM Consensus Application with Judge Panel Specification
+
+## Overview
+A multi-agent consensus system where all models both answer AND judge, with an independent tiebreaker panel for disputed cases. This creates a self-regulating system that only escalates to expert judges when necessary.
+
+## Core Architecture: Answer → Judge Panel → Tiebreaker (if needed)
+
+### Design Philosophy
+- **Democratic Judging**: All models judge all answers (including their own)
+- **Self-Regulating**: System detects when judges agree vs. disagree
+- **Cost-Effective**: Only uses expensive tiebreaker when needed
+- **Transparent**: Track which models agreed, disagreed, and why
+- **Quality-Gated**: Only proven judges can be tiebreakers
+
+## Four-Phase Workflow
+
+### Phase 1: Divergent Answering (Parallel)
+All N models independently answer the question.
+
+**Input**: Original user prompt  
+**Output**: N model responses with reasoning and confidence
+
+**Enhanced Prompt Template**:
+```
+Question: {user_prompt}
+
+Please provide:
+1. Your complete answer
+2. Your step-by-step reasoning
+3. Your confidence level (0-100%)
+4. [Psychology] Theoretical framework(s) used
+5. [If applicable] Supporting evidence/citations
+
+Be thorough and specific.
+```
+
+### Phase 2: Judge Panel (Parallel)
+All N models judge all N answers.
+
+**Input**: Original prompt + all N answers  
+**Output**: N × N judgments (each model judges every answer)
+
+**Important Decision: Self-Judgment**
+- **Option A**: Allow models to judge their own answers (tracks self-confidence)
+- **Option B**: Exclude self-judgment (avoids bias)
+- **Recommendation**: Start with Option A, monitor for systematic self-favoritism
+
+**Judge Prompt Template**:
+```
+You are evaluating answers to the following question:
+Question: {original_prompt}
+
+Below are {N} answers from different models:
+
+[Answer 1 - {Model A}]
+{answer_text}
+{reasoning}
+{confidence}
+
+[Answer 2 - {Model B}]
+{answer_text}
+...
+
+Your task:
+1. Score each answer from 0-10 based on:
+   - Accuracy and correctness
+   - Completeness and depth
+   - Quality of reasoning
+   - Appropriate use of theoretical frameworks (if applicable)
+   - Confidence calibration
+
+2. Rank the answers from best to worst
+
+3. Identify which answer you consider BEST and explain why
+
+4. Note any answers that are problematic or incorrect
+
+5. Provide your confidence in your judgment (0-100%)
+
+Format:
+SCORES: {ModelA: X/10, ModelB: Y/10, ...}
+RANKING: [Best to worst]
+BEST_ANSWER: {Model name}
+REASONING: {Your detailed reasoning for selecting the best answer}
+PROBLEMATIC: {Any answers with significant issues}
+CONFIDENCE: {0-100}
+```
+
+### Phase 3: Consensus Analysis
+Analyze all judgments to determine agreement level.
+
+**Consensus Metrics**:
+
+1. **Winner Agreement** (Primary Metric)
+   ```
+   agreement_score = (votes_for_most_popular_answer / total_judges)
+   
+   Example: 5 judges, 4 picked Model A as best, 1 picked Model B
+   agreement_score = 4/5 = 0.80 = 80% agreement
+   ```
+
+2. **Score Variance** (Secondary Metric)
+   ```
+   For each answer, calculate variance in scores it received
+   Low variance across all answers = judges agree on relative quality
+   ```
+
+3. **Ranking Correlation** (Tertiary Metric)
+   ```
+   Calculate Spearman correlation between judge rankings
+   High correlation = judges have similar preference orders
+   ```
+
+**Consensus Thresholds**:
+```
+≥ 80% agreement: STRONG CONSENSUS
+    → Use winner, no tiebreaker needed
+    → Cost: N models answering + N models judging
+
+60-79% agreement: MODERATE CONSENSUS
+    → Use weighted synthesis of top answers
+    → Consider confidence scores
+    → No tiebreaker if clear leader
+
+40-59% agreement: WEAK CONSENSUS
+    → Escalate to tiebreaker judge
+    → This is a genuinely difficult question
+
+< 40% agreement: HIGH CONFLICT
+    → Definitely need tiebreaker
+    → May indicate ambiguous question or legitimate theoretical disagreement
+```
+
+### Phase 4: Tiebreaker Resolution (Conditional)
+Only triggered when agreement < threshold (default 60%).
+
+**Tiebreaker Selection** from curated `judges.txt`:
+1. Filter for available models
+2. Select based on strategy:
+   - **First Available**: Use first from priority list
+   - **Domain Match**: Use judge specialized in question domain
+   - **Historical Best**: Use judge with best past performance
+   - **Multiple Vote**: Use 2-3 tiebreakers who vote
+
+**Tiebreaker Prompt Template**:
+```
+You are an independent tiebreaker judge. The panel of judges disagreed on which answer is best.
+
+ORIGINAL QUESTION:
+{original_prompt}
+
+ANSWERS FROM MODELS:
+{all_answers_with_metadata}
+
+JUDGE PANEL EVALUATIONS:
+{summary_of_all_judgments}
+
+DISAGREEMENT SUMMARY:
+- Agreement level: {agreement_percentage}%
+- {X} judges selected {Model A}
+- {Y} judges selected {Model B}
+- Key points of disagreement: {extracted_disagreement_points}
+
+Your task as tiebreaker:
+1. Review all answers and judge evaluations
+2. Consider why judges disagreed
+3. Make the final decision on which answer is best
+4. Provide detailed reasoning for your decision
+5. Indicate if this is a case of:
+   - Clear winner despite disagreement
+   - Legitimate theoretical disagreement (multiple valid perspectives)
+   - Ambiguous question requiring clarification
+
+Format:
+DECISION: {Model name of best answer}
+REASONING: {Detailed explanation}
+DISAGREEMENT_TYPE: [Clear Winner / Theoretical Disagreement / Ambiguous Question]
+CONFIDENCE: {0-100}
+SYNTHESIS: {If applicable, synthesize the best elements from multiple answers}
+```
+
+## Data Models
+
+### ModelAnswer
+```csharp
+class ModelAnswer
+{
+    string ModelName { get; set; }
+    string AnswerText { get; set; }
+    string Reasoning { get; set; }
+    double Confidence { get; set; } // 0-100
+    string TheoreticalFramework { get; set; } // Domain-specific
+    List<string> Citations { get; set; }
+    DateTime Timestamp { get; set; }
+    int TokensUsed { get; set; }
+}
+```
+
+### JudgmentResult
+```csharp
+class JudgmentResult
+{
+    string JudgingModel { get; set; }
+    Dictionary<string, double> Scores { get; set; } // ModelName → Score (0-10)
+    List<string> Ranking { get; set; } // Ordered list: best to worst
+    string BestAnswer { get; set; } // Model name
+    string JudgmentReasoning { get; set; }
+    List<string> ProblematicAnswers { get; set; }
+    double JudgmentConfidence { get; set; } // 0-100
+    bool IsSelfJudgment { get; set; } // True if judging own answer
+}
+```
+
+### ConsensusAnalysis
+```csharp
+class ConsensusAnalysis
+{
+    double WinnerAgreement { get; set; } // 0.0-1.0
+    string ConsensusWinner { get; set; } // Model name with most votes
+    int VotesForWinner { get; set; }
+    Dictionary<string, int> VoteDistribution { get; set; } // ModelName → vote count
+    
+    ConsensusLevel Level { get; set; }
+    bool NeedsTiebreaker { get; set; }
+    
+    Dictionary<string, double> AverageScores { get; set; } // ModelName → avg score
+    Dictionary<string, double> ScoreVariance { get; set; } // ModelName → variance
+    double RankingCorrelation { get; set; } // Average Spearman correlation
+    
+    List<JudgmentResult> AllJudgments { get; set; }
+}
+
+enum ConsensusLevel
+{
+    StrongConsensus,    // ≥80% agreement
+    ModerateConsensus,  // 60-79%
+    WeakConsensus,      // 40-59%
+    HighConflict        // <40%
+}
+```
+
+### TiebreakerResult
+```csharp
+class TiebreakerResult
+{
+    string TiebreakerModel { get; set; }
+    string DecisionWinner { get; set; } // Final decision on best answer
+    string DetailedReasoning { get; set; }
+    DisagreementType DisagreementType { get; set; }
+    double Confidence { get; set; }
+    string SynthesizedAnswer { get; set; } // Optional synthesis
+}
+
+enum DisagreementType
+{
+    ClearWinner,                    // One answer is objectively better
+    LegitimateTheoretical,          // Valid perspectives from different frameworks
+    AmbiguousQuestion,              // Question needs clarification
+    InsufficientInformation         // Cannot determine from available data
+}
+```
+
+### FinalConsensusResult
+```csharp
+class FinalConsensusResult
+{
+    // Final Output
+    string BestAnswer { get; set; }
+    string BestAnswerModelName { get; set; }
+    string SynthesizedAnswer { get; set; } // May combine elements
+    
+    // Process Metadata
+    ConsensusAnalysis ConsensusAnalysis { get; set; }
+    bool TiebreakerUsed { get; set; }
+    TiebreakerResult TiebreakerResult { get; set; }
+    
+    // Transparency
+    List<ModelAnswer> AllAnswers { get; set; }
+    List<JudgmentResult> AllJudgments { get; set; }
+    
+    // Confidence
+    double OverallConfidence { get; set; }
+    string ConfidenceReasoning { get; set; }
+    
+    // Performance
+    TimeSpan AnsweringTime { get; set; }
+    TimeSpan JudgingTime { get; set; }
+    TimeSpan TiebreakerTime { get; set; }
+    TimeSpan TotalTime { get; set; }
+    int TotalTokensUsed { get; set; }
+    decimal TotalCost { get; set; }
+}
+```
+
+## Configuration: judges.txt
+
+### Format
+```yaml
+# judges.txt - Curated tiebreaker panel
+# Only models with proven judgment quality should be here
+
+version: 1.0
+updated: 2025-10-03
+
+tiebreaker_judges:
+  - model_id: claude-sonnet-4.5
+    priority: 1
+    specialties: 
+      - psychology
+      - nuanced-synthesis
+      - theoretical-frameworks
+    historical_performance:
+      total_tiebreaks: 0  # Updated as used
+      agreement_with_eventual_consensus: 0.0
+      user_satisfaction_score: 0.0
+    notes: "Strong at identifying when theoretical disagreements are legitimate"
+    cost_per_1k_tokens: 0.003
+    
+  - model_id: gpt-4o
+    priority: 2
+    specialties:
+      - general
+      - technical
+      - research-evaluation
+    historical_performance:
+      total_tiebreaks: 0
+      agreement_with_eventual_consensus: 0.0
+      user_satisfaction_score: 0.0
+    notes: "Reliable all-purpose judge, good at evidence evaluation"
+    cost_per_1k_tokens: 0.0025
+    
+  - model_id: gemini-2.0-pro-exp
+    priority: 3
+    specialties:
+      - analytical
+      - scientific-reasoning
+      - data-interpretation
+    historical_performance:
+      total_tiebreaks: 0
+      agreement_with_eventual_consensus: 0.0
+      user_satisfaction_score: 0.0
+    notes: "Excellent at analytical tasks and scientific validity"
+    cost_per_1k_tokens: 0.002
+
+# Models explicitly excluded from tiebreaking (but can answer/judge)
+excluded_from_tiebreaking:
+  - model_id: fast-cheap-model
+    reason: "Good at generating answers, but meta-cognitive abilities insufficient for tiebreaking"
+    can_answer: true
+    can_judge: true
+    
+  - model_id: creative-model
+    reason: "Too variable in judgment quality; prefers creative over accurate"
+    can_answer: true
+    can_judge: true
+
+# Thresholds and rules
+consensus_thresholds:
+  strong_consensus: 0.80      # No tiebreaker needed
+  moderate_consensus: 0.60    # Consider tiebreaker based on confidence
+  weak_consensus: 0.40        # Definitely use tiebreaker
+  
+tiebreaker_strategy:
+  selection_method: highest_quality  # Options: first_available, highest_quality, domain_match, multiple_vote
+  multiple_vote_count: 1             # If using multiple_vote, how many tiebreakers
+  fallback_to_next_priority: true    # If priority 1 fails, try priority 2
+  
+  # Use multiple tiebreakers for high-stakes
+  use_multiple_for_high_stakes: true
+  high_stakes_indicators:
+    - disagreement_level: "high_conflict"  # <40% agreement
+    - domain: "psychology"                  # Domain-specific
+    - user_flagged: true                    # User marked as important
+```
+
+### Loading Configuration
+```csharp
+class JudgeConfiguration
+{
+    public List<TiebreakerJudge> TiebreakerJudges { get; set; }
+    public List<ExcludedModel> ExcludedFromTiebreaking { get; set; }
+    public ConsensusThresholds Thresholds { get; set; }
+    public TiebreakerStrategy Strategy { get; set; }
+    
+    public static JudgeConfiguration LoadFromFile(string path)
+    {
+        // Load and parse judges.txt (YAML format)
+        // Validate model_ids exist and are accessible
+        // Return configuration object
+    }
+}
+
+class TiebreakerJudge
+{
+    public string ModelId { get; set; }
+    public int Priority { get; set; }
+    public List<string> Specialties { get; set; }
+    public HistoricalPerformance Performance { get; set; }
+    public string Notes { get; set; }
+    public decimal CostPer1kTokens { get; set; }
+}
+
+class HistoricalPerformance
+{
+    public int TotalTiebreaks { get; set; }
+    public double AgreementWithConsensus { get; set; } // 0.0-1.0
+    public double UserSatisfactionScore { get; set; } // 0.0-1.0
+    
+    // Updated after each tiebreaker use
+    public void RecordTiebreaker(bool agreedWithEventualConsensus, double userScore)
+    {
+        TotalTiebreaks++;
+        AgreementWithConsensus = 
+            ((AgreementWithConsensus * (TotalTiebreaks - 1)) + (agreedWithEventualConsensus ? 1.0 : 0.0)) 
+            / TotalTiebreaks;
+        UserSatisfactionScore = 
+            ((UserSatisfactionScore * (TotalTiebreaks - 1)) + userScore) 
+            / TotalTiebreaks;
+    }
+}
+
+class ConsensusThresholds
+{
+    public double StrongConsensus { get; set; } = 0.80;
+    public double ModerateConsensus { get; set; } = 0.60;
+    public double WeakConsensus { get; set; } = 0.40;
+}
+
+enum TiebreakerSelectionMethod
+{
+    FirstAvailable,      // Use first from priority list
+    HighestQuality,      // Use historical performance metrics
+    DomainMatch,         // Match judge specialties to question domain
+    MultipleVote         // Use multiple judges who vote
+}
+```
+
+## Implementation Guidelines
+
+### Phase Orchestration
+```csharp
+class ConsensusOrchestrator
+{
+    private List<IAgent> _answeringAgents;
+    private JudgeConfiguration _judgeConfig;
+    private IMetricsRepository _metrics;
+    
+    public async Task<FinalConsensusResult> GetConsensusAsync(
+        string prompt, 
+        string domain = "general")
+    {
+        var result = new FinalConsensusResult();
+        var stopwatch = Stopwatch.StartNew();
+        
+        // Phase 1: Collect answers
+        result.AllAnswers = await CollectAnswersAsync(prompt);
+        result.AnsweringTime = stopwatch.Elapsed;
+        
+        // Phase 2: Collect judgments
+        result.AllJudgments = await CollectJudgmentsAsync(prompt, result.AllAnswers);
+        result.JudgingTime = stopwatch.Elapsed - result.AnsweringTime;
+        
+        // Phase 3: Analyze consensus
+        result.ConsensusAnalysis = AnalyzeConsensus(result.AllJudgments);
+        
+        // Phase 4: Tiebreaker (if needed)
+        if (result.ConsensusAnalysis.NeedsTiebreaker)
+        {
+            var tiebreakerStart = stopwatch.Elapsed;
+            result.TiebreakerResult = await RunTiebreakerAsync(
+                prompt, 
+                result.AllAnswers, 
+                result.AllJudgments,
+                domain);
+            result.TiebreakerUsed = true;
+            result.TiebreakerTime = stopwatch.Elapsed - tiebreakerStart;
+            
+            result.BestAnswerModelName = result.TiebreakerResult.DecisionWinner;
+        }
+        else
+        {
+            result.BestAnswerModelName = result.ConsensusAnalysis.ConsensusWinner;
+        }
+        
+        // Find the actual best answer
+        result.BestAnswer = result.AllAnswers
+            .First(a => a.ModelName == result.BestAnswerModelName)
+            .AnswerText;
+        
+        // Calculate overall confidence
+        result.OverallConfidence = CalculateOverallConfidence(result);
+        
+        result.TotalTime = stopwatch.Elapsed;
+        return result;
+    }
+    
+    private async Task<List<JudgmentResult>> CollectJudgmentsAsync(
+        string prompt, 
+        List<ModelAnswer> answers)
+    {
+        var judgmentTasks = _answeringAgents.Select(async agent =>
+        {
+            return await agent.JudgeAnswersAsync(prompt, answers);
+        });
+        
+        var judgments = await Task.WhenAll(judgmentTasks);
+        return judgments.ToList();
+    }
+    
+    private ConsensusAnalysis AnalyzeConsensus(List<JudgmentResult> judgments)
+    {
+        // Count votes for each answer
+        var voteDistribution = judgments
+            .GroupBy(j => j.BestAnswer)
+            .ToDictionary(g => g.Key, g => g.Count());
+        
+        var winner = voteDistribution.OrderByDescending(kvp => kvp.Value).First();
+        var agreement = (double)winner.Value / judgments.Count;
+        
+        var analysis = new ConsensusAnalysis
+        {
+            WinnerAgreement = agreement,
+            ConsensusWinner = winner.Key,
+            VotesForWinner = winner.Value,
+            VoteDistribution = voteDistribution,
+            AllJudgments = judgments
+        };
+        
+        // Calculate average scores and variance
+        analysis.AverageScores = CalculateAverageScores(judgments);
+        analysis.ScoreVariance = CalculateScoreVariance(judgments);
+        analysis.RankingCorrelation = CalculateRankingCorrelation(judgments);
+        
+        // Determine consensus level
+        if (agreement >= _judgeConfig.Thresholds.StrongConsensus)
+            analysis.Level = ConsensusLevel.StrongConsensus;
+        else if (agreement >= _judgeConfig.Thresholds.ModerateConsensus)
+            analysis.Level = ConsensusLevel.ModerateConsensus;
+        else if (agreement >= _judgeConfig.Thresholds.WeakConsensus)
+            analysis.Level = ConsensusLevel.WeakConsensus;
+        else
+            analysis.Level = ConsensusLevel.HighConflict;
+        
+        // Determine if tiebreaker needed
+        analysis.NeedsTiebreaker = agreement < _judgeConfig.Thresholds.ModerateConsensus;
+        
+        return analysis;
+    }
+    
+    private async Task<TiebreakerResult> RunTiebreakerAsync(
+        string prompt,
+        List<ModelAnswer> answers,
+        List<JudgmentResult> judgments,
+        string domain)
+    {
+        var tiebreaker = SelectTiebreakerJudge(domain);
+        var result = await tiebreaker.ResolveTiebreakerAsync(prompt, answers, judgments);
+        
+        // Record metrics
+        await _metrics.RecordTiebreakerUsageAsync(tiebreaker.ModelId, result);
+        
+        return result;
+    }
+    
+    private IAgent SelectTiebreakerJudge(string domain)
+    {
+        switch (_judgeConfig.Strategy.SelectionMethod)
+        {
+            case TiebreakerSelectionMethod.FirstAvailable:
+                return GetFirstAvailableTiebreaker();
+                
+            case TiebreakerSelectionMethod.HighestQuality:
+                return GetHighestQualityTiebreaker();
+                
+            case TiebreakerSelectionMethod.DomainMatch:
+                return GetDomainMatchedTiebreaker(domain);
+                
+            case TiebreakerSelectionMethod.MultipleVote:
+                throw new NotImplementedException("Use RunMultipleTiebreakersAsync instead");
+                
+            default:
+                return GetFirstAvailableTiebreaker();
+        }
+    }
+}
+```
+
+### Self-Judgment Bias Detection
+```csharp
+class BiasAnalyzer
+{
+    public Dictionary<string, double> CalculateSelfBias(List<JudgmentResult> allJudgments)
+    {
+        var selfBias = new Dictionary<string, double>();
+        
+        foreach (var judgment in allJudgments)
+        {
+            if (judgment.Scores.ContainsKey(judgment.JudgingModel))
+            {
+                var selfScore = judgment.Scores[judgment.JudgingModel];
+                var avgOtherScores = judgment.Scores
+                    .Where(kvp => kvp.Key != judgment.JudgingModel)
+                    .Average(kvp => kvp.Value);
+                
+                var bias = selfScore - avgOtherScores;
+                selfBias[judgment.JudgingModel] = bias;
+            }
+        }
+        
+        return selfBias;
+    }
+    
+    public void LogBiasMetrics(Dictionary<string, double> selfBias)
+    {
+        foreach (var kvp in selfBias)
+        {
+            Console.WriteLine($"{kvp.Key} self-bias: {kvp.Value:F2} points");
+            
+            if (Math.Abs(kvp.Value) > 2.0)
+            {
+                Console.WriteLine($"  WARNING: {kvp.Key} shows significant self-bias");
+            }
+        }
+    }
+}
+```
+
+### Cost Optimization
+```csharp
+class CostOptimizer
+{
+    public decimal CalculateQueryCost(FinalConsensusResult result, 
+                                       Dictionary<string, decimal> modelCosts)
+    {
+        decimal cost = 0;
+        
+        // Answering cost
+        foreach (var answer in result.AllAnswers)
+        {
+            cost += (answer.TokensUsed / 1000.0m) * modelCosts[answer.ModelName];
+        }
+        
+        // Judging cost (typically cheaper - shorter prompts)
+        foreach (var judgment in result.AllJudgments)
+        {
+            // Estimate: judgment uses ~30% of answering tokens
+            cost += (result.AllAnswers.First().TokensUsed * 0.3m / 1000.0m) 
+                    * modelCosts[judgment.JudgingModel];
+        }
+        
+        // Tiebreaker cost (if used)
+        if (result.TiebreakerUsed)
+        {
+            var tiebreakerModel = result.TiebreakerResult.TiebreakerModel;
+            // Tiebreaker sees all answers + all judgments, so longer prompt
+            var estimatedTokens = result.AllAnswers.Sum(a => a.TokensUsed) * 1.5;
+            cost += (estimatedTokens / 1000.0m) * modelCosts[tiebreakerModel];
+        }
+        
+        return cost;
+    }
+    
+    public void ReportCostSavings(List<FinalConsensusResult> results)
+    {
+        var tiebreakerUsageRate = results.Count(r => r.TiebreakerUsed) / (double)results.Count;
+        
+        Console.WriteLine($"Tiebreaker usage: {tiebreakerUsageRate:P1}");
+        Console.WriteLine($"Cost saved by not always using tiebreaker: {(1 - tiebreakerUsageRate):P1}");
+    }
+}
+```
+
+## Testing Strategy
+
+### Unit Tests
+- Consensus calculation with various vote distributions
+- Threshold logic (strong/moderate/weak/conflict)
+- Self-bias detection
+- Tiebreaker selection logic
+
+### Integration Tests
+- Full workflow with mocked agents
+- Tiebreaker triggered vs. not triggered paths
+- Multiple tiebreaker voting
+- judges.txt loading and validation
+
+### Test Scenarios
+
+**Scenario 1: Strong Consensus**
+```
+5 models answer, 4 judges pick Model A, 1 picks Model B
+Expected: No tiebreaker, return Model A answer
+Cost: 5 answers + 5 judgments
+```
+
+**Scenario 2: High Conflict**
+```
+5 models answer, votes split: 2-2-1
+Expected: Tiebreaker activated, tiebreaker decides
+Cost: 5 answers + 5 judgments + 1 tiebreaker
+```
+
+**Scenario 3: Self-Bias**
+```
+Model A gives itself 10/10, others give it 6/10
+Expected: Detect +4 self-bias, log warning
+```
+
+**Scenario 4: Legitimate Disagreement (Psychology)**
+```
+CBT-oriented answer vs Psychodynamic-oriented answer
+Both technically correct from different frameworks
+Expected: Tiebreaker identifies as "Theoretical Disagreement", surfaces both perspectives
+```
+
+## Success Metrics
+
+- **Tiebreaker Usage Rate**: Target 20-40% (system is self-regulating)
+- **Agreement When No Tiebreaker**: Target >80% (strong consensus is genuine)
+- **Cost Efficiency**: Compare to "always use best model" baseline
+- **User Satisfaction**: Track feedback on final answers
+- **Judge Quality**: Monitor tiebreaker agreement with eventual user preference
+
+## Future Enhancements
+
+1. **Adaptive Thresholds**: Adjust consensus thresholds based on question difficulty
+2. **Specialization Routing**: Route questions to domain-expert judges
+3. **Judge Training**: Use human feedback to improve judge selection
+4. **Confidence Calibration**: Weight votes by judge confidence scores
+5. **Multi-Round Debate**: After tiebreaker, allow original models to respond
+6. **Explanation Quality**: Judge not just answers but quality of reasoning
+7. **User Feedback Loop**: Learn which judges users trust over time
+
+## Migration Path from Single Judge
+
+If migrating from a single-judge system:
+
+**Week 1-2**: Run judge panel in parallel with existing single judge, compare results  
+**Week 3-4**: Switch to judge panel for non-critical queries, keep single judge for critical  
+**Week 5+**: Full migration, use historical data to populate `judges.txt` performance metrics
+
+## Appendix: Calculating Ranking Correlation
+
+```python
+from scipy.stats import spearmanr
+
+def calculate_ranking_correlation(judgments):
+    """
+    Calculate average Spearman correlation between all pairs of judge rankings
+    """
+    rankings = [j.ranking for j in judgments]  # List of rankings
+    
+    correlations = []
+    for i in range(len(rankings)):
+        for j in range(i+1, len(rankings)):
+            corr, _ = spearmanr(rankings[i], rankings[j])
+            correlations.append(corr)
+    
+    return sum(correlations) / len(correlations) if correlations else 0.0
+```
+
+## Appendix: Weighted Synthesis (Moderate Consensus)
+
+When agreement is moderate (60-79%), you can synthesize based on weights:
+
+```csharp
+string SynthesizeWeightedAnswer(
+    List<ModelAnswer> answers,
+    ConsensusAnalysis consensus)
+{
+    // Weight answers by:
+    // 1. Number of votes received
+    // 2. Average score from judges
+    // 3. Confidence of the answer itself
+    
+    var weights = answers.Select(a => new
+    {
+        Answer = a,
+        VoteWeight = consensus.VoteDistribution.GetValueOrDefault(a.ModelName, 0),
+        ScoreWeight = consensus.AverageScores[a.ModelName] / 10.0,
+        ConfidenceWeight = a.Confidence / 100.0
+    }).ToList();
+    
+    // Combine weights (you can adjust formula)
+    var finalWeights = weights.Select(w => new
+    {
+        w.Answer,
+        Combined = (w.VoteWeight * 0.5) + (w.ScoreWeight * 0.3) + (w.ConfidenceWeight * 0.2)
+    }).OrderByDescending(w => w.Combined);
+    
+    // Take top 2-3 answers and synthesize
+    var topAnswers = finalWeights.Take(2);
+    
+    return $"Synthesized from multiple models: {string.Join("; ", topAnswers.Select(t => t.Answer.AnswerText))}";
+}
+```
