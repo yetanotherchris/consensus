@@ -15,8 +15,8 @@ public class PromptBuilder : IPromptBuilder
     {
         // Templates are copied to output directory by the build process
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        _divergentTemplatePath = Path.Combine(baseDirectory, "PromptTemplates", "DivergentPrompt.tmpl");
-        _synthesisTemplatePath = Path.Combine(baseDirectory, "PromptTemplates", "SynthesisPrompt.tmpl");
+        _divergentTemplatePath = Path.Combine(baseDirectory, "Templates", "Prompt-Divergent.tmpl");
+        _synthesisTemplatePath = Path.Combine(baseDirectory, "Templates", "Prompt-Synthesis.tmpl");
         
         // Register custom functions for templates
         RegisterTemplateFunctions();

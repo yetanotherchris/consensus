@@ -5,20 +5,20 @@ using TextTemplate;
 namespace Consensus.Services;
 
 /// <summary>
-/// Service for handling output operations (saving files)
+/// Service for handling Markdown output operations
 /// </summary>
-public class OutputService : IOutputService
+public class MarkdownOutputService : IMarkdownOutputService
 {
     private readonly SimpleLogger _logger;
     private readonly string _outputTemplatePath;
 
-    public OutputService(SimpleLogger logger)
+    public MarkdownOutputService(SimpleLogger logger)
     {
         _logger = logger;
         
         // Template is copied to output directory by the build process
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        _outputTemplatePath = Path.Combine(baseDirectory, "PromptTemplates", "ConsensusOutput.tmpl");
+        _outputTemplatePath = Path.Combine(baseDirectory, "Templates", "ConsensusOutput.tmpl");
     }
 
     public async Task SaveConsensusResultAsync(ConsensusResult result, string filePath)

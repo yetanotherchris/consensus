@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consensus Analysis Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .meta-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .meta-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .meta-card .label {
+            font-size: 0.75em;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .meta-card .value {
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .answer-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .answer-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .answer-box p {
+            margin-bottom: 15px;
+        }
+        
+        .citation-list {
+            margin-top: 15px;
+        }
+        
+        .citation-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #764ba2;
+        }
+        
+        .citation-item strong {
+            color: #764ba2;
+        }
+        
+        .agreement-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .agreement-item {
+            background: #e7f3ff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            display: flex;
+            align-items: center;
+        }
+        
+        .agreement-item::before {
+            content: "✓";
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+        
+        .disagreement-note {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .model-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .model-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        
+        .model-name {
+            font-size: 1.4em;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .confidence-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .model-content {
+            color: #333;
+        }
+        
+        .model-full-response {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .subsection {
+            margin: 25px 0;
+        }
+        
+        .subsection h4 {
+            color: #764ba2;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        
+        .subsection p, .subsection ul {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .subsection ul {
+            padding-left: 25px;
+        }
+        
+        .subsection li {
+            margin-bottom: 8px;
+        }
+        
+        .context-note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .context-note strong {
+            color: #856404;
+        }
+        
+        .expandable-toggle {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+        
+        .expandable-toggle:hover {
+            background: #5568d3;
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .expandable-content.expanded {
+            max-height: none;
+        }
+        
+        .reasoning-box {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .meta-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ .Title }}</h1>
+            <div class="meta-info">
+                <div class="meta-card">
+                    <div class="label">Generated</div>
+                    <div class="value">{{ .GeneratedDate }}</div>
+                </div>
+                <div class="meta-card">
+                    <div class="label">Models Consulted</div>
+                    <div class="value">{{ .ModelsCount }} Models</div>
+                </div>
+                <div class="meta-card">
+                    <div class="label">Processing Time</div>
+                    <div class="value">{{ .ProcessingTime }}</div>
+                </div>
+                <div class="meta-card">
+                    <div class="label">Consensus Level</div>
+                    <div class="value">{{ .ConsensusLevel }}</div>
+                </div>
+                <div class="meta-card">
+                    <div class="label">Confidence</div>
+                    <div class="value">{{ .OverallConfidence }}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2 class="section-title">Synthesized Answer</h2>
+                
+                <div class="answer-box">
+                    <p>{{ .SynthesizedAnswer }}</p>
+                </div>
+            </div>
+            
+            {{ if .SynthesisReasoning }}
+            <div class="section">
+                <h2 class="section-title">Synthesis Reasoning</h2>
+                <div class="reasoning-box">
+                    <p>{{ .SynthesisReasoning }}</p>
+                </div>
+            </div>
+            {{ end }}
+            
+            {{ if .HasAgreementPoints }}
+            <div class="section">
+                <h2 class="section-title">Points of Agreement</h2>
+                <div class="agreement-grid">
+                    {{ range .AgreementPoints }}
+                    <div class="agreement-item">{{ . }}</div>
+                    {{ end }}
+                </div>
+            </div>
+            {{ end }}
+            
+            {{ if .HasDisagreements }}
+            <div class="section">
+                <h2 class="section-title">Points of Disagreement</h2>
+                {{ range .Disagreements }}
+                <div class="disagreement-note">
+                    <strong>{{ .Topic }}</strong><br>
+                    {{ if .HasViews }}
+                    <ul style="margin-top: 10px;">
+                        {{ range .Views }}
+                        <li>{{ . }}</li>
+                        {{ end }}
+                    </ul>
+                    {{ end }}
+                </div>
+                {{ end }}
+            </div>
+            {{ end }}
+            
+            <div class="section">
+                <h2 class="section-title">Individual Model Responses</h2>
+                
+                {{ range $index, $response := .IndividualResponses }}
+                <div class="model-card">
+                    <div class="model-header" onclick="toggleExpand('model{{ $index }}')">
+                        <div class="model-name">{{ $response.ModelName }}</div>
+                        <div class="confidence-badge">{{ $response.ConfidenceDisplay }} Confidence</div>
+                    </div>
+                    <div class="model-content">
+                        <div class="subsection">
+                            <h4>Answer</h4>
+                            <p>{{ $response.Answer }}</p>
+                        </div>
+                        <button class="expandable-toggle" onclick="toggleExpand('model{{ $index }}')">Show Reasoning</button>
+                    </div>
+                    <div id="model{{ $index }}" class="expandable-content">
+                        <div class="model-full-response">
+                            <div class="subsection">
+                                <h4>Reasoning</h4>
+                                <p>{{ $response.Reasoning }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleExpand(id) {
+            const element = document.getElementById(id);
+            element.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>

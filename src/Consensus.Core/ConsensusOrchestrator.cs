@@ -17,7 +17,8 @@ public class ConsensusOrchestrator
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISynthesizerService _synthesizerService;
-    private readonly IOutputService _outputService;
+    private readonly IMarkdownOutputService _markdownOutputService;
+    private readonly IHtmlOutputService _htmlOutputService;
 
     public ConsensusOrchestrator(
         ConsensusConfiguration config,
@@ -25,14 +26,16 @@ public class ConsensusOrchestrator
         IAgentService agentService,
         IPromptBuilder promptBuilder,
         ISynthesizerService synthesizerService,
-        IOutputService outputService)
+        IMarkdownOutputService markdownOutputService,
+        IHtmlOutputService htmlOutputService)
     {
         _config = config;
         _logger = logger;
         _agentService = agentService;
         _promptBuilder = promptBuilder;
         _synthesizerService = synthesizerService;
-        _outputService = outputService;
+        _markdownOutputService = markdownOutputService;
+        _htmlOutputService = htmlOutputService;
     }
 
     /// <summary>
@@ -143,10 +146,18 @@ public class ConsensusOrchestrator
     }
 
     /// <summary>
-    /// Save consensus result to file
+    /// Save consensus result to file (both Markdown and HTML)
     /// </summary>
     public async Task SaveConsensusAsync(ConsensusResult result)
     {
-        await _outputService.SaveConsensusResultAsync(result, _config.ConsensusFile);
+        // Save Markdown output
+        await _markdownOutputService.SaveConsensusResultAsync(result, _config.ConsensusFile);
+        
+        // Save HTML output with timestamp
+        var htmlFileName = $"output-{DateTime.Now:yyyyMMdd-HHmmss}.html";
+        var htmlFilePath = Path.Combine(_config.OutputDirectory, "responses", htmlFileName);
+        await _htmlOutputService.SaveConsensusResultAsync(result, htmlFilePath);
+        
+        _logger.LogInformation("✓ HTML output saved to: {0}", htmlFilePath);
     }
 }
