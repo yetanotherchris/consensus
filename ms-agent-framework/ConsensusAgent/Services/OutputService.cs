@@ -1,6 +1,6 @@
-using System.Text;
 using ConsensusAgent.Logging;
 using ConsensusAgent.Models;
+using TextTemplate;
 
 namespace ConsensusAgent.Services;
 
@@ -10,10 +10,15 @@ namespace ConsensusAgent.Services;
 public class OutputService : IOutputService
 {
     private readonly SimpleLogger _logger;
+    private readonly string _outputTemplatePath;
 
     public OutputService(SimpleLogger logger)
     {
         _logger = logger;
+        
+        // Template is copied to output directory by the build process
+        var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        _outputTemplatePath = Path.Combine(baseDirectory, "PromptTemplates", "ConsensusOutput.tmpl");
     }
 
     public async Task SaveConsensusResultAsync(ConsensusResult result, string filePath)
@@ -37,87 +42,41 @@ public class OutputService : IOutputService
 
     private string FormatConsensusResult(ConsensusResult result)
     {
-        var output = new StringBuilder();
+        var templateContent = File.ReadAllText(_outputTemplatePath);
+        var template = Template.New("output").Parse(templateContent);
         
-        // Header
-        output.AppendLine("# Consensus Result");
-        output.AppendLine();
-        output.AppendLine($"**Generated:** {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        output.AppendLine($"**Models Consulted:** {result.IndividualResponses.Count}");
-        output.AppendLine($"**Processing Time:** {result.TotalProcessingTime.TotalSeconds:F2}s");
-        output.AppendLine($"**Consensus Level:** {result.ConsensusLevel}");
-        output.AppendLine($"**Overall Confidence:** {result.OverallConfidence:P0}");
-        output.AppendLine();
-        output.AppendLine("---");
-        output.AppendLine();
-        
-        // Synthesized Answer
-        output.AppendLine("## Synthesized Answer");
-        output.AppendLine();
-        output.AppendLine(result.SynthesizedAnswer);
-        output.AppendLine();
-        
-        // Synthesis Reasoning
-        if (!string.IsNullOrWhiteSpace(result.SynthesisReasoning))
+        // Prepare data for template with pre-computed values
+        var individualResponsesData = result.IndividualResponses.Select(r => new
         {
-            output.AppendLine("## Synthesis Reasoning");
-            output.AppendLine();
-            output.AppendLine(result.SynthesisReasoning);
-            output.AppendLine();
-        }
+            r.ModelName,
+            r.Answer,
+            r.Reasoning,
+            ConfidenceDisplay = $"{r.ConfidenceScore:P0}"
+        }).ToList();
         
-        // Agreement Points
-        if (result.AgreementPoints.Any())
+        var disagreementsData = result.Disagreements.Select(d => new
         {
-            output.AppendLine("## Points of Agreement");
-            output.AppendLine();
-            foreach (var point in result.AgreementPoints)
-            {
-                output.AppendLine($"- {point.Point}");
-            }
-            output.AppendLine();
-        }
+            d.Topic,
+            d.Views,
+            HasViews = d.Views.Any()
+        }).ToList();
         
-        // Disagreements
-        if (result.Disagreements.Any())
+        var data = new
         {
-            output.AppendLine("## Points of Disagreement");
-            output.AppendLine();
-            foreach (var disagreement in result.Disagreements)
-            {
-                output.AppendLine($"### {disagreement.Topic}");
-                if (disagreement.Views.Any())
-                {
-                    foreach (var view in disagreement.Views)
-                    {
-                        output.AppendLine($"- **{view.ModelName}:** {view.Position}");
-                    }
-                }
-                output.AppendLine();
-            }
-        }
+            GeneratedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            ModelsCount = result.IndividualResponses.Count,
+            ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
+            ConsensusLevel = result.ConsensusLevel.ToString(),
+            OverallConfidence = $"{result.OverallConfidence:P0}",
+            result.SynthesizedAnswer,
+            result.SynthesisReasoning,
+            result.AgreementPoints,
+            HasAgreementPoints = result.AgreementPoints.Any(),
+            Disagreements = disagreementsData,
+            HasDisagreements = result.Disagreements.Any(),
+            IndividualResponses = individualResponsesData
+        };
         
-        // Individual Responses
-        output.AppendLine("## Individual Model Responses");
-        output.AppendLine();
-        foreach (var response in result.IndividualResponses)
-        {
-            output.AppendLine($"### {response.ModelName}");
-            output.AppendLine();
-            output.AppendLine($"**Confidence:** {response.ConfidenceScore:P0}");
-            output.AppendLine();
-            output.AppendLine("**Answer:**");
-            output.AppendLine(response.Answer);
-            output.AppendLine();
-            
-            if (!string.IsNullOrWhiteSpace(response.Reasoning))
-            {
-                output.AppendLine("**Reasoning:**");
-                output.AppendLine(response.Reasoning);
-                output.AppendLine();
-            }
-        }
-        
-        return output.ToString();
+        return template.Execute(data);
     }
 }

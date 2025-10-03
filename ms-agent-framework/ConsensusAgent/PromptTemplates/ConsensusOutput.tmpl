@@ -1,0 +1,57 @@
+# Consensus Result
+
+**Generated:** {{ .GeneratedDate }}
+**Models Consulted:** {{ .ModelsCount }}
+**Processing Time:** {{ .ProcessingTime }}
+**Consensus Level:** {{ .ConsensusLevel }}
+**Overall Confidence:** {{ .OverallConfidence }}
+
+---
+
+## Synthesized Answer
+
+{{ .SynthesizedAnswer }}
+
+{{ if .SynthesisReasoning }}
+## Synthesis Reasoning
+
+{{ .SynthesisReasoning }}
+
+{{ end }}
+{{ if .HasAgreementPoints }}
+## Points of Agreement
+
+{{ range .AgreementPoints }}
+- {{ .Point }}
+{{ end }}
+
+{{ end }}
+{{ if .HasDisagreements }}
+## Points of Disagreement
+
+{{ range .Disagreements }}
+### {{ .Topic }}
+{{ if .HasViews }}
+{{ range .Views }}
+- **{{ .ModelName }}:** {{ .Position }}
+{{ end }}
+{{ end }}
+
+{{ end }}
+{{ end }}
+## Individual Model Responses
+
+{{ range .IndividualResponses }}
+### {{ .ModelName }}
+
+**Confidence:** {{ .ConfidenceDisplay }}
+
+**Answer:**
+{{ .Answer }}
+
+{{ if .Reasoning }}
+**Reasoning:**
+{{ .Reasoning }}
+
+{{ end }}
+{{ end }}

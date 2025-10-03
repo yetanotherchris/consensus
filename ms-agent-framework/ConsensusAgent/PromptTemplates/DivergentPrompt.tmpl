@@ -1,0 +1,20 @@
+Original Question:
+{{ .Prompt }}
+
+Please provide:
+1. Your answer to the question
+{{ if .IncludeReasoning }}
+2. Your reasoning process (step-by-step)
+{{ end }}
+{{ if .IncludeConfidence }}
+3. Your confidence level as a decimal between 0.0 and 1.0
+
+IMPORTANT: Include your confidence score in XML tags at the end of your response:
+<confidence>0.85</confidence>
+Replace 0.85 with your actual confidence (0.0 = no confidence, 1.0 = complete confidence)
+{{ end }}
+{{ if .IncludeTheoreticalFramework }}
+4. The theoretical framework(s) informing your answer
+{{ end }}
+
+Be specific and thorough in your response.
