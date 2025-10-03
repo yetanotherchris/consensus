@@ -1,0 +1,4 @@
+anthropic/claude-sonnet-4
+x-ai/grok-3
+deepseek/deepseek-chat-v3.1:free
+google/gemini-2.5-pro

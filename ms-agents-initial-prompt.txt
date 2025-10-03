@@ -1,0 +1,63 @@
+Inside the "ms-agent-framework" directory, can you create a command line C# application.
+
+This application should use the Microsoft Agent Framework (https://learn.microsoft.com/en-gb/agent-framework/user-guide/agents/multi-turn-conversation?pivots=programming-language-csharp)
+
+The command line app should take a prompt .txt file as an argument for its initial prompt.
+The command line app should take a list of models from a text file with newline delimited lists of models. For example "x-ai/grok-3" \n "anthrophic/claude4"
+
+The tool should use the Microsoft Agent Framework SDK to create Multi-Turn Conversations, where the models collectively create a consensus on the prompt.
+
+In the ms-agent-framework is an "example-prompt.txt" file you can use.
+
+For the LLM endpoint, you can use the environmental variable "ASKLLM_API_ENDPOINT"
+For the LLM key, you can use the environmental variable "ASKLLM_API_KEY"
+
+-------
+My Planned Tasks:
+Set up the C# project structure (Console application with necessary NuGet packages)
+Implement command-line argument parsing for prompt file and models file
+Integrate Microsoft Agent Framework SDK for multi-turn conversations
+Create the consensus logic where models take turns discussing the prompt
+Handle environment variable configuration for API endpoint and key
+Add error handling and validation for file inputs and API calls
+Test the application with the existing example prompt
+Questions before I proceed:
+Model format: When you mention models like "x-ai/grok-3" and "anthropic/claude4", are these the exact model identifiers that the Microsoft Agent Framework expects, or do they need to be mapped to specific framework model names?
+
+Consensus mechanism: How should the models reach consensus? Should they:
+
+Take turns providing responses and building on each other's answers?
+Vote on the best response after all provide initial answers?
+Have a specific number of rounds of discussion?
+Output format: How should the final consensus be presented? As a single agreed-upon response, or should it show the discussion process and final agreement?
+
+Models file location: Should I create an example models file, or do you have a specific format/location in mind?
+
+Does this plan look correct, and could you clarify these questions so I can build exactly what you need?
+
+1. No - I am using openrouter. So use openrouter model names. The environmental variables I mentioned will allow you to call the endpoint and get responses, if you need to test.
+2. I think they should take turns, as per a conversation. But voting is an excellent idea. Keep the code simple though please, don't introduce overly engineered solutions with complex voting systems. Keep the number of rounds to 5 (so with 5 models, this would be 25 requests)
+3. Output format should be markdown, a single agreed upon response. The agreement process should be written to a separate file using a log format. This should be easy to read, so the model's response and proposed changes, vote should be shortened for this log
+4. I have created a models.txt file with a list of models in it
+
+-------
+
+Excellent! Now I have all the information I need. Here's my refined plan:
+
+Implementation Plan
+Create C# Console Application with .NET 8/9 and required NuGet packages (Microsoft Agent Framework, HTTP client libraries)
+Implement command-line parsing for prompt file and models file paths
+Build OpenRouter integration using the Microsoft Agent Framework with environment variables
+Implement multi-turn conversation logic (5 rounds with all models participating)
+Add simple voting mechanism after each round
+Generate two outputs:
+Final consensus response in Markdown format
+Conversation log showing the discussion process (shortened for readability)
+Add proper error handling and validation
+
+---------
+My requirements were to use the Microsoft Agent Framework: Microsoft.Agents.AI.OpenAI
+
+You are using OpenAI.
+
+You're absolutely right! I apologize for the confusion. Let me fix this to use the actual Microsoft Agent Framework packages. Let me first check what's available and then update the project.
