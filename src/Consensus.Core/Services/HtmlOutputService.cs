@@ -45,26 +45,89 @@ public class HtmlOutputService : IHtmlOutputService
         _logger.LogInformation("HTML consensus result saved successfully");
     }
 
+    /// <summary>
+    /// Preprocesses markdown to fix common issues like bullet points
+    /// </summary>
+    private string PreprocessMarkdown(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown))
+            return markdown;
+        
+        // Replace bullet character (•) with proper markdown list syntax
+        // Handle lines that start with "• " and convert them to "- "
+        var lines = markdown.Split('\n');
+        var processedLines = new List<string>();
+        
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.TrimStart();
+            if (trimmedLine.StartsWith("• "))
+            {
+                // Replace bullet with markdown list marker, preserving indentation
+                var indentation = line.Substring(0, line.Length - trimmedLine.Length);
+                processedLines.Add(indentation + "- " + trimmedLine.Substring(2));
+            }
+            else
+            {
+                processedLines.Add(line);
+            }
+        }
+        
+        return string.Join('\n', processedLines);
+    }
+
+    /// <summary>
+    /// Generates a brief summary from the answer text
+    /// </summary>
+    private string GenerateSummary(string answer, string modelName)
+    {
+        if (string.IsNullOrEmpty(answer))
+            return "No response provided.";
+        
+        // Take first sentence or up to 150 characters, whichever comes first
+        var firstParagraph = answer.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? answer;
+        var firstSentence = firstParagraph.Split(new[] { ". ", ".\n", ".\r" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? firstParagraph;
+        
+        // Clean up markdown formatting for summary
+        var summary = firstSentence
+            .Replace("**", "")
+            .Replace("*", "")
+            .Replace("#", "")
+            .Trim();
+        
+        if (summary.Length > 150)
+        {
+            summary = summary.Substring(0, 147) + "...";
+        }
+        else if (!summary.EndsWith(".") && !summary.EndsWith("!") && !summary.EndsWith("?"))
+        {
+            summary += ".";
+        }
+        
+        return $"Brief summary: {summary}";
+    }
+
     private string FormatConsensusResult(ConsensusResult result)
     {
         var templateContent = File.ReadAllText(_htmlTemplatePath);
         var template = Template.New("htmloutput").Parse(templateContent);
         
         // Convert Markdown to HTML
-        var synthesizedAnswerHtml = Markdown.ToHtml(result.SynthesizedAnswer, _markdownPipeline);
+        var synthesizedAnswerHtml = Markdown.ToHtml(PreprocessMarkdown(result.SynthesizedAnswer), _markdownPipeline);
         var synthesisReasoningHtml = !string.IsNullOrEmpty(result.SynthesisReasoning) 
-            ? Markdown.ToHtml(result.SynthesisReasoning, _markdownPipeline) 
+            ? Markdown.ToHtml(PreprocessMarkdown(result.SynthesisReasoning), _markdownPipeline) 
             : string.Empty;
         
         // Prepare data for template matching the actual ConsensusResult structure
         var individualResponsesData = result.IndividualResponses.Select(r => new
         {
             r.ModelName,
-            AnswerHtml = Markdown.ToHtml(r.Answer, _markdownPipeline),
+            Summary = GenerateSummary(r.Answer, r.ModelName),
+            AnswerHtml = Markdown.ToHtml(PreprocessMarkdown(r.Answer), _markdownPipeline),
             ReasoningHtml = !string.IsNullOrEmpty(r.Reasoning) 
-                ? Markdown.ToHtml(r.Reasoning, _markdownPipeline) 
+                ? Markdown.ToHtml(PreprocessMarkdown(r.Reasoning), _markdownPipeline) 
                 : string.Empty,
-            ConfidenceDisplay = $"{r.ConfidenceScore:P0}"
+            ConfidenceDisplay = $"{r.ConfidenceScore * 100:F0}"
         }).ToList();
         
         var disagreementsData = result.Disagreements.Select(d => new
@@ -84,7 +147,7 @@ public class HtmlOutputService : IHtmlOutputService
             ModelsCount = result.IndividualResponses.Count,
             ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
             ConsensusLevel = result.ConsensusLevel.ToString(),
-            OverallConfidence = $"{result.OverallConfidence:P0}",
+            OverallConfidence = $"{result.OverallConfidence * 100:F0}",
             SynthesizedAnswerHtml = synthesizedAnswerHtml,
             SynthesisReasoningHtml = synthesisReasoningHtml,
             AgreementPoints = agreementPointsData,

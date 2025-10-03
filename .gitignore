@@ -390,6 +390,7 @@ FodyWeavers.xsd
 # Generated output files (application-specific)
 consensus-*.md
 conversation-log-*.txt
+output/
 test-prompt.txt
 
 chatlog.md

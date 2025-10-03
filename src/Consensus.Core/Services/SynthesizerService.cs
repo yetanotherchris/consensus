@@ -139,7 +139,8 @@ public class SynthesizerService : ISynthesizerService
         
         foreach (var line in lines)
         {
-            var cleaned = Regex.Replace(line, @"^[\s\-\*\d\.]+", "").Trim();
+            // Remove bullet characters (•), dashes, asterisks, numbers, dots, and whitespace from the start
+            var cleaned = Regex.Replace(line, @"^[\s\-\*\d\.\u2022]+", "").Trim();
             if (!string.IsNullOrWhiteSpace(cleaned))
             {
                 points.Add(new ConsensusPoint

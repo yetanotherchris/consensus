@@ -223,6 +223,15 @@
             margin-bottom: 8px;
         }
         
+        ul {
+            padding-left: 30px;
+            list-style-type: disc;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
         .context-note {
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -348,7 +357,7 @@
                 <div class="disagreement-note">
                     <strong>{{ .Topic }}</strong><br>
                     {{ if .HasViews }}
-                    <ul style="margin-top: 10px;">
+                    <ul style="margin-top: 10px; padding-left: 30px;">
                         {{ range .Views }}
                         <li>{{ . }}</li>
                         {{ end }}
@@ -366,21 +375,24 @@
                 <div class="model-card">
                     <div class="model-header" onclick="toggleExpand('model{{ $index }}')">
                         <div class="model-name">{{ $response.ModelName }}</div>
-                        <div class="confidence-badge">{{ $response.ConfidenceDisplay }} Confidence</div>
+                        <div class="confidence-badge">{{ $response.ConfidenceDisplay }}% Confidence</div>
                     </div>
                     <div class="model-content">
-                        <div class="subsection">
-                            <h4>Answer</h4>
-                            {{ $response.AnswerHtml }}
-                        </div>
-                        <button class="expandable-toggle" onclick="toggleExpand('model{{ $index }}')">Show Reasoning</button>
+                        {{ $response.Summary }}
+                        <button class="expandable-toggle" onclick="toggleExpand('model{{ $index }}')">Show Full Response</button>
                     </div>
                     <div id="model{{ $index }}" class="expandable-content">
                         <div class="model-full-response">
                             <div class="subsection">
+                                <h4>Answer</h4>
+                                {{ $response.AnswerHtml }}
+                            </div>
+                            {{ if $response.ReasoningHtml }}
+                            <div class="subsection">
                                 <h4>Reasoning</h4>
                                 {{ $response.ReasoningHtml }}
                             </div>
+                            {{ end }}
                         </div>
                     </div>
                 </div>
