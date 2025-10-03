@@ -82,6 +82,7 @@ public class HtmlOutputService : IHtmlOutputService
         var template = Template.New("htmloutput").Parse(templateContent);
         
         // Convert Markdown to HTML
+        var originalPromptHtml = Markdown.ToHtml(PreprocessMarkdown(result.OriginalPrompt), _markdownPipeline);
         var synthesizedAnswerHtml = Markdown.ToHtml(PreprocessMarkdown(result.SynthesizedAnswer), _markdownPipeline);
         var synthesisReasoningHtml = !string.IsNullOrEmpty(result.SynthesisReasoning) 
             ? Markdown.ToHtml(PreprocessMarkdown(result.SynthesisReasoning), _markdownPipeline) 
@@ -117,7 +118,7 @@ public class HtmlOutputService : IHtmlOutputService
             ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
             ConsensusLevel = result.ConsensusLevel.ToString(),
             OverallConfidence = $"{result.OverallConfidence * 100:F0}",
-            OriginalPrompt = result.OriginalPrompt,
+            OriginalPromptHtml = originalPromptHtml,
             SynthesizedAnswerHtml = synthesizedAnswerHtml,
             SynthesisReasoningHtml = synthesisReasoningHtml,
             AgreementPoints = agreementPointsData,
