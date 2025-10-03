@@ -76,37 +76,6 @@ public class HtmlOutputService : IHtmlOutputService
         return string.Join('\n', processedLines);
     }
 
-    /// <summary>
-    /// Generates a brief summary from the answer text
-    /// </summary>
-    private string GenerateSummary(string answer, string modelName)
-    {
-        if (string.IsNullOrEmpty(answer))
-            return "No response provided.";
-        
-        // Take first sentence or up to 150 characters, whichever comes first
-        var firstParagraph = answer.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? answer;
-        var firstSentence = firstParagraph.Split(new[] { ". ", ".\n", ".\r" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? firstParagraph;
-        
-        // Clean up markdown formatting for summary
-        var summary = firstSentence
-            .Replace("**", "")
-            .Replace("*", "")
-            .Replace("#", "")
-            .Trim();
-        
-        if (summary.Length > 150)
-        {
-            summary = summary.Substring(0, 147) + "...";
-        }
-        else if (!summary.EndsWith(".") && !summary.EndsWith("!") && !summary.EndsWith("?"))
-        {
-            summary += ".";
-        }
-        
-        return $"Brief summary: {summary}";
-    }
-
     private string FormatConsensusResult(ConsensusResult result)
     {
         var templateContent = File.ReadAllText(_htmlTemplatePath);
@@ -122,7 +91,7 @@ public class HtmlOutputService : IHtmlOutputService
         var individualResponsesData = result.IndividualResponses.Select(r => new
         {
             r.ModelName,
-            Summary = GenerateSummary(r.Answer, r.ModelName),
+            r.Summary,
             AnswerHtml = Markdown.ToHtml(PreprocessMarkdown(r.Answer), _markdownPipeline),
             ReasoningHtml = !string.IsNullOrEmpty(r.Reasoning) 
                 ? Markdown.ToHtml(PreprocessMarkdown(r.Reasoning), _markdownPipeline) 

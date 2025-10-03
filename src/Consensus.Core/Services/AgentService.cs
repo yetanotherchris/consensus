@@ -164,12 +164,25 @@ public class AgentService : IAgentService
             }
         }
 
+        // Look for summary in XML format: <summary>...</summary>
+        string summary = "No summary provided by model";
+        var summaryMatch = Regex.Match(rawResponse, @"<summary>(.+?)</summary>", 
+            RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        
+        if (summaryMatch.Success)
+        {
+            summary = summaryMatch.Groups[1].Value.Trim();
+            // Remove summary tag from answer
+            answer = answer.Replace(summaryMatch.Value, "").Trim();
+        }
+
         return new ModelResponse
         {
             ModelName = modelName,
             Answer = answer,
             Reasoning = reasoning,
             ConfidenceScore = confidence,
+            Summary = summary,
             Timestamp = timestamp,
             TokensUsed = 0 // Not currently tracked
         };

@@ -38,6 +38,11 @@ public class ModelResponse
     public List<string> Citations { get; set; } = new();
     
     /// <summary>
+    /// A 2-sentence summary of the answer and reasoning
+    /// </summary>
+    public string Summary { get; set; } = string.Empty;
+    
+    /// <summary>
     /// Timestamp when the response was generated
     /// </summary>
     public DateTime Timestamp { get; set; }

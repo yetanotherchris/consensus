@@ -58,11 +58,22 @@ public class SynthesizerService : ISynthesizerService
 
     private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses)
     {
+        // Extract summary from XML tags
+        string summary = "No summary provided by model";
+        var summaryMatch = Regex.Match(synthesisResponse, @"<summary>(.+?)</summary>", 
+            RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        
+        if (summaryMatch.Success)
+        {
+            summary = summaryMatch.Groups[1].Value.Trim();
+        }
+        
         // Extract structured sections from the synthesis response
         var result = new ConsensusResult
         {
             SynthesizedAnswer = ExtractSection(synthesisResponse, "SYNTHESIZED ANSWER"),
             SynthesisReasoning = ExtractSection(synthesisResponse, "REASONING"),
+            Summary = summary,
             OverallConfidence = ParseConfidence(ExtractSection(synthesisResponse, "CONFIDENCE")),
             ConsensusLevel = ParseConsensusLevel(ExtractSection(synthesisResponse, "CONSENSUS LEVEL")),
             IndividualResponses = originalResponses,

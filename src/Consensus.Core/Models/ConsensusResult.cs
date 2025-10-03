@@ -16,6 +16,11 @@ public class ConsensusResult
     public string SynthesisReasoning { get; set; } = string.Empty;
     
     /// <summary>
+    /// A 2-sentence summary of the synthesized answer
+    /// </summary>
+    public string Summary { get; set; } = string.Empty;
+    
+    /// <summary>
     /// Overall confidence in the synthesized answer (0.0 to 1.0)
     /// </summary>
     public double OverallConfidence { get; set; }
