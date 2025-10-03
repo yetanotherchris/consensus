@@ -317,15 +317,15 @@
                 <h2 class="section-title">Synthesized Answer</h2>
                 
                 <div class="answer-box">
-                    <p>{{ .SynthesizedAnswer }}</p>
+                    {{ .SynthesizedAnswerHtml }}
                 </div>
             </div>
             
-            {{ if .SynthesisReasoning }}
+            {{ if .SynthesisReasoningHtml }}
             <div class="section">
                 <h2 class="section-title">Synthesis Reasoning</h2>
                 <div class="reasoning-box">
-                    <p>{{ .SynthesisReasoning }}</p>
+                    {{ .SynthesisReasoningHtml }}
                 </div>
             </div>
             {{ end }}
@@ -371,7 +371,7 @@
                     <div class="model-content">
                         <div class="subsection">
                             <h4>Answer</h4>
-                            <p>{{ $response.Answer }}</p>
+                            {{ $response.AnswerHtml }}
                         </div>
                         <button class="expandable-toggle" onclick="toggleExpand('model{{ $index }}')">Show Reasoning</button>
                     </div>
@@ -379,7 +379,7 @@
                         <div class="model-full-response">
                             <div class="subsection">
                                 <h4>Reasoning</h4>
-                                <p>{{ $response.Reasoning }}</p>
+                                {{ $response.ReasoningHtml }}
                             </div>
                         </div>
                     </div>

@@ -1,5 +1,6 @@
 using Consensus.Logging;
 using Consensus.Models;
+using Markdig;
 using TextTemplate;
 
 namespace Consensus.Services;
@@ -11,10 +12,14 @@ public class HtmlOutputService : IHtmlOutputService
 {
     private readonly SimpleLogger _logger;
     private readonly string _htmlTemplatePath;
+    private readonly MarkdownPipeline _markdownPipeline;
 
     public HtmlOutputService(SimpleLogger logger)
     {
         _logger = logger;
+        _markdownPipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
         
         // Template is copied to output directory by the build process
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -45,12 +50,20 @@ public class HtmlOutputService : IHtmlOutputService
         var templateContent = File.ReadAllText(_htmlTemplatePath);
         var template = Template.New("htmloutput").Parse(templateContent);
         
+        // Convert Markdown to HTML
+        var synthesizedAnswerHtml = Markdown.ToHtml(result.SynthesizedAnswer, _markdownPipeline);
+        var synthesisReasoningHtml = !string.IsNullOrEmpty(result.SynthesisReasoning) 
+            ? Markdown.ToHtml(result.SynthesisReasoning, _markdownPipeline) 
+            : string.Empty;
+        
         // Prepare data for template matching the actual ConsensusResult structure
         var individualResponsesData = result.IndividualResponses.Select(r => new
         {
             r.ModelName,
-            r.Answer,
-            r.Reasoning,
+            AnswerHtml = Markdown.ToHtml(r.Answer, _markdownPipeline),
+            ReasoningHtml = !string.IsNullOrEmpty(r.Reasoning) 
+                ? Markdown.ToHtml(r.Reasoning, _markdownPipeline) 
+                : string.Empty,
             ConfidenceDisplay = $"{r.ConfidenceScore:P0}"
         }).ToList();
         
@@ -61,6 +74,9 @@ public class HtmlOutputService : IHtmlOutputService
             HasViews = d.Views.Any()
         }).ToList();
         
+        // Convert agreement points to just the Point string
+        var agreementPointsData = result.AgreementPoints.Select(p => p.Point).ToList();
+        
         var data = new
         {
             Title = "Consensus Analysis Report",
@@ -69,9 +85,9 @@ public class HtmlOutputService : IHtmlOutputService
             ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
             ConsensusLevel = result.ConsensusLevel.ToString(),
             OverallConfidence = $"{result.OverallConfidence:P0}",
-            SynthesizedAnswer = result.SynthesizedAnswer,
-            SynthesisReasoning = result.SynthesisReasoning,
-            AgreementPoints = result.AgreementPoints,
+            SynthesizedAnswerHtml = synthesizedAnswerHtml,
+            SynthesisReasoningHtml = synthesisReasoningHtml,
+            AgreementPoints = agreementPointsData,
             HasAgreementPoints = result.AgreementPoints.Any(),
             Disagreements = disagreementsData,
             HasDisagreements = result.Disagreements.Any(),

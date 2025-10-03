@@ -155,7 +155,7 @@ public class ConsensusOrchestrator
         
         // Save HTML output with timestamp
         var htmlFileName = $"output-{DateTime.Now:yyyyMMdd-HHmmss}.html";
-        var htmlFilePath = Path.Combine(_config.OutputDirectory, "responses", htmlFileName);
+        var htmlFilePath = Path.Combine(_config.OutputDirectory, "output", "responses", htmlFileName);
         await _htmlOutputService.SaveConsensusResultAsync(result, htmlFilePath);
         
         _logger.LogInformation("✓ HTML output saved to: {0}", htmlFilePath);
