@@ -387,10 +387,7 @@ FodyWeavers.xsd
 .idea/
 *.sln.iml
 
-# Generated output files (application-specific)
-consensus-*.md
-conversation-log-*.txt
-output/
-test-prompt.txt
 
-chatlog.md
+# Consenus input/output
+output/
+test-prompt*.txt

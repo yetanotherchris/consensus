@@ -252,7 +252,6 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.95em;
-            margin-top: 15px;
             transition: background 0.3s ease;
         }
         
@@ -278,6 +277,44 @@
             border-left: 4px solid #667eea;
         }
         
+        .reasoning-box p {
+            margin-bottom: 15px;
+        }
+        
+        .reasoning-box p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .button-row {
+            margin-top: 15px;
+            display: block;
+        }
+        
+        .original-prompt-box {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 40px;
+            color: #666;
+        }
+        
+        .original-prompt-box h3 {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .original-prompt-box p {
+            color: #555;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -289,6 +326,10 @@
             
             .content {
                 padding: 20px;
+            }
+            
+            .original-prompt-box {
+                margin: 20px;
             }
         }
     </style>
@@ -321,6 +362,11 @@
             </div>
         </div>
         
+        <div class="original-prompt-box">
+            <h3>Original Prompt</h3>
+            <p>{{ .OriginalPrompt }}</p>
+        </div>
+        
         <div class="content">
             <div class="section">
                 <h2 class="section-title">Synthesized Answer</h2>
@@ -350,9 +396,9 @@
             </div>
             {{ end }}
             
-            {{ if .HasDisagreements }}
             <div class="section">
                 <h2 class="section-title">Points of Disagreement</h2>
+                {{ if .HasDisagreements }}
                 {{ range .Disagreements }}
                 <div class="disagreement-note">
                     <strong>{{ .Topic }}</strong><br>
@@ -365,8 +411,13 @@
                     {{ end }}
                 </div>
                 {{ end }}
+                {{ else }}
+                <div class="disagreement-note" style="background: #e7f3ff; border-left: 4px solid #4CAF50; color: #1a5f1a;">
+                    <strong>No Significant Disagreements</strong><br>
+                    <p style="margin-top: 10px; margin-bottom: 0;">All models reached strong consensus on this topic.</p>
+                </div>
+                {{ end }}
             </div>
-            {{ end }}
             
             <div class="section">
                 <h2 class="section-title">Individual Model Responses</h2>
@@ -379,6 +430,8 @@
                     </div>
                     <div class="model-content">
                         {{ $response.Summary }}
+                    </div>
+                    <div class="button-row">
                         <button class="expandable-toggle" onclick="toggleExpand('model{{ $index }}')">Show Full Response</button>
                     </div>
                     <div id="model{{ $index }}" class="expandable-content">

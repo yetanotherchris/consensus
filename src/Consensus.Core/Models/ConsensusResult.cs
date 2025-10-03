@@ -49,4 +49,9 @@ public class ConsensusResult
     /// Total time taken to process the request
     /// </summary>
     public TimeSpan TotalProcessingTime { get; set; }
+    
+    /// <summary>
+    /// The original prompt/question that was submitted
+    /// </summary>
+    public string OriginalPrompt { get; set; } = string.Empty;
 }

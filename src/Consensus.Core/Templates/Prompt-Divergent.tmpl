@@ -1,10 +1,14 @@
 Original Question:
 {{ .Prompt }}
 
-Please provide:
+Please provide your response in the following format:
+
 1. Your answer to the question
 {{ if .IncludeReasoning }}
 2. Your reasoning process (step-by-step)
+
+IMPORTANT: Format your reasoning section exactly as:
+REASONING: [Your detailed reasoning here]
 {{ end }}
 {{ if .IncludeConfidence }}
 3. Your confidence level as a decimal between 0.0 and 1.0

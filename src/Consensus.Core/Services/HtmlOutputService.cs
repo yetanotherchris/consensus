@@ -117,6 +117,7 @@ public class HtmlOutputService : IHtmlOutputService
             ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
             ConsensusLevel = result.ConsensusLevel.ToString(),
             OverallConfidence = $"{result.OverallConfidence * 100:F0}",
+            OriginalPrompt = result.OriginalPrompt,
             SynthesizedAnswerHtml = synthesizedAnswerHtml,
             SynthesisReasoningHtml = synthesisReasoningHtml,
             AgreementPoints = agreementPointsData,

@@ -88,8 +88,26 @@ public class AgentService : IAgentService
         double confidence = 0.0;
 
         // Look for reasoning section (various possible formats)
-        var reasoningMatch = Regex.Match(rawResponse, @"(?:Reasoning|My reasoning|Step-by-step):\s*(.+?)(?=(?:Confidence|$))", 
+        // Pattern 1: "REASONING:" format (preferred)
+        var reasoningMatch = Regex.Match(rawResponse, @"REASONING:\s*(.+?)(?=(?:CONFIDENCE|<confidence>|$))", 
             RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        
+        // Pattern 2: Markdown headers like "## Reasoning", "### Reasoning Process", etc.
+        if (!reasoningMatch.Success)
+        {
+            reasoningMatch = Regex.Match(rawResponse, 
+                @"#{1,6}\s*(?:\d+\.\s*)?(?:Reasoning|My reasoning|Step-by-step|Reasoning Process)(?:[^\n]*)\n+(.+?)(?=(?:#{1,6}\s*(?:\d+\.\s*)?(?:Confidence|Summary)|<confidence>|$))", 
+                RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        }
+        
+        // Pattern 3: Simple "Reasoning:" with colon
+        if (!reasoningMatch.Success)
+        {
+            reasoningMatch = Regex.Match(rawResponse, 
+                @"(?:Reasoning|My reasoning|Step-by-step):\s*(.+?)(?=(?:Confidence|<confidence>|$))", 
+                RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        }
+        
         if (reasoningMatch.Success)
         {
             reasoning = reasoningMatch.Groups[1].Value.Trim();

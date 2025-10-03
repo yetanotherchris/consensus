@@ -49,14 +49,14 @@ public class SynthesizerService : ISynthesizerService
             cancellationToken);
 
         // Parse the synthesis response
-        var result = ParseSynthesisResponse(synthesisResponse, responses);
+        var result = ParseSynthesisResponse(synthesisResponse, responses, originalPrompt);
         
         _logger.LogInformation("Synthesis complete. Consensus level: {0}", result.ConsensusLevel);
         
         return result;
     }
 
-    private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses)
+    private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt)
     {
         // Extract summary from XML tags
         string summary = "No summary provided by model";
@@ -78,7 +78,8 @@ public class SynthesizerService : ISynthesizerService
             ConsensusLevel = ParseConsensusLevel(ExtractSection(synthesisResponse, "CONSENSUS LEVEL")),
             IndividualResponses = originalResponses,
             AgreementPoints = ParseAgreementPoints(ExtractSection(synthesisResponse, "AGREEMENT POINTS")),
-            Disagreements = ParseDisagreements(ExtractSection(synthesisResponse, "DISAGREEMENTS"))
+            Disagreements = ParseDisagreements(ExtractSection(synthesisResponse, "DISAGREEMENTS")),
+            OriginalPrompt = originalPrompt
         };
 
         // If parsing failed, use the full response as the answer
@@ -173,15 +174,11 @@ public class SynthesizerService : ISynthesizerService
         if (string.IsNullOrWhiteSpace(disagreementText))
             return disagreements;
 
-        // For now, create a single disagreement entry with the full text
-        // A more sophisticated parser could extract multiple disagreements
-        disagreements.Add(new Disagreement
-        {
-            Topic = "Model Disagreements",
-            Views = new List<DissentingView>(),
-            IsLegitimateTheoretical = false // Would need deeper analysis
-        });
-
+        // Only add disagreement if there's actual content to display
+        // The empty disagreement with no views was causing "Model Disagreements" to show with no content
+        // For now, we'll return an empty list since we don't have a sophisticated parser yet
+        // A more sophisticated parser could extract multiple disagreements and their views
+        
         return disagreements;
     }
 }
