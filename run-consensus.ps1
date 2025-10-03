@@ -36,6 +36,6 @@ Write-Host "Models file: $ModelsFile" -ForegroundColor Cyan
 Write-Host ""
 
 # Run the application
-pushd ConsensusAgent
+pushd src\ConsensusAgent
 dotnet run --project ConsensusAgent.csproj -- $PromptFile $ModelsFile
 popd
