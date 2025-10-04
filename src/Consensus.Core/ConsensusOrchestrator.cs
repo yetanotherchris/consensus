@@ -153,8 +153,9 @@ public class ConsensusOrchestrator
         // Save Markdown output
         await _markdownOutputService.SaveConsensusResultAsync(result, _config.ConsensusFile);
         
-        // Save HTML output with timestamp
-        var htmlFileName = $"output-{DateTime.Now:yyyyMMdd-HHmmss}.html";
+        // Save HTML output with custom ID or timestamp
+        var filenameIdentifier = _config.OutputFilenamesId ?? DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var htmlFileName = $"output-{filenameIdentifier}.html";
         var htmlFilePath = Path.Combine(_config.OutputDirectory, "output", "responses", htmlFileName);
         await _htmlOutputService.SaveConsensusResultAsync(result, htmlFilePath);
         

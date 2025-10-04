@@ -10,15 +10,17 @@ public class ConsensusAgentSettings
     public string ApiEndpoint { get; init; } = string.Empty;
     public string ApiKey { get; init; } = string.Empty;
     public string[] Models { get; init; } = Array.Empty<string>();
+    public string? OutputFilenamesId { get; init; }
 
     /// <summary>
     /// Creates settings from file paths and environment variables.
     /// </summary>
     /// <param name="promptFile">Path to the prompt file</param>
     /// <param name="modelsFile">Path to the models file</param>
+    /// <param name="outputFilenamesId">Optional custom ID for output filenames</param>
     /// <returns>Validated settings instance</returns>
     /// <exception cref="SettingsException">Thrown when validation fails</exception>
-    public static ConsensusAgentSettings CreateFromArgsAndEnvironment(string promptFile, string modelsFile)
+    public static ConsensusAgentSettings CreateFromArgsAndEnvironment(string promptFile, string modelsFile, string? outputFilenamesId = null)
     {
 
         // Validate files exist
@@ -56,12 +58,12 @@ public class ConsensusAgentSettings
 
         if (string.IsNullOrWhiteSpace(apiEndpoint))
         {
-            throw new SettingsException("ASKLLM_API_ENDPOINT environment variable not set.");
+            throw new SettingsException("CONSENSUS_API_ENDPOINT environment variable not set.");
         }
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new SettingsException("ASKLLM_API_KEY environment variable not set.");
+            throw new SettingsException("CONSENSUS_API_KEY environment variable not set.");
         }
 
         return new ConsensusAgentSettings
@@ -70,7 +72,8 @@ public class ConsensusAgentSettings
             ModelsFile = modelsFile,
             ApiEndpoint = apiEndpoint,
             ApiKey = apiKey,
-            Models = models
+            Models = models,
+            OutputFilenamesId = outputFilenamesId
         };
     }
 }

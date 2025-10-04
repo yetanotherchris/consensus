@@ -1,0 +1,22 @@
+========== v0.1
+- Create a .NET Core website. It should reference Consensus.Core.
+- It should have a textbox for a prompt, in a textbox, resembling the Ollama interface, Grok interface, Claude interface and other chat UIs.
+- It should have a button with an uparrow to send the prompt
+- The website should process the prompt server-side in a controller
+- This controller can be backend-for-frontend (BFF)
+- The front end can call controller methods as if it's an api, e.g. using fetch()
+- React should be used, but without being complex
+- The controller should follow the pattern of Consensus.Console for processing a prompt
+- The controller will need several methods
+    1. A method for creating a unique ID (guid) that will be used in subsequent requests. This should use a model with this ID, and initial prompt. The list of models can be hardcoded for now, based on those in the models.txt file.
+    2. A method for starting the orchestration process, which takes an ID
+    3. A method for getting the logs from the orchestration process. These logs will need to have an ID they're associated with. I think the simplest way of doing this is to simply write to a log file with the ID as the filename. I need ideas on how to stream logs via this controller method, so the method takes a timestamp and returns logs after this timestamp. Perhaps the logs could be written in a structured format that allows for parsing this information.
+
+- The logs should be displayed on the site in a readable code-like format, while it is working.
+- My initial idea is it would be easiest to simply start a new container
+
+
+========== v2
+Proof of concept
+
+==========

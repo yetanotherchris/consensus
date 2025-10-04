@@ -52,6 +52,13 @@ public class ConsensusConfiguration
     public string OutputDirectory { get; init; } = ".";
     public string Timestamp { get; init; } = DateTime.Now.ToString("yyyyMMddHHmmss");
     
-    public string LogFile => Path.Combine(OutputDirectory, "output", "logs", $"conversation-log-{Timestamp}.txt");
-    public string ConsensusFile => Path.Combine(OutputDirectory, "output", "responses", $"consensus-{Timestamp}.md");
+    /// <summary>
+    /// Optional custom ID for output filenames. If provided, replaces the timestamp.
+    /// </summary>
+    public string? OutputFilenamesId { get; init; }
+    
+    private string FilenameIdentifier => OutputFilenamesId ?? Timestamp;
+    
+    public string LogFile => Path.Combine(OutputDirectory, "output", "logs", $"conversation-log-{FilenameIdentifier}.txt");
+    public string ConsensusFile => Path.Combine(OutputDirectory, "output", "responses", $"consensus-{FilenameIdentifier}.md");
 }

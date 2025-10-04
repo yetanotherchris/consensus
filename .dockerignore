@@ -1,0 +1,34 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/publish/
+
+# Output files
+output/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation and scripts (optional - include if needed)
+docs/
+askllm/
+*.md
+*.ps1
+
+# Test files (optional - exclude if not needed in container)
+test-*.txt
+
+# Logs
+*.log

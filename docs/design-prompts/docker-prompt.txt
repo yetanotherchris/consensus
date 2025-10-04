@@ -1,0 +1,8 @@
+========== Container
+- Update Consensus.Console so it parses its command line arguments using System.Commandline (https://www.nuget.org/packages/System.CommandLine)
+  - Use --prompt-file and --models-file as the names
+- Update Consensus.Console so it takes a 3rd, optional argument, which is a unique id. 
+  - It should then use this ID for ouput filenames (log file, output markdown and HTML file).
+  - Use --output-filenames-id
+- Create a Docker file for the Consensus.Console. The docker image should read environmental variables for the command line arguments:
+ - Use PROMPT_FILE, MODELS_FILE, OUTPUT_FILENAMES_ID for their names
