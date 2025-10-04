@@ -1,7 +1,38 @@
 # consensus
+.NET command line and web application to ask multiple models a question, and provide a synthesized consensus answer using a judge.
 
-Ask multiple large language models for a consensus answer using [ask-llm](https://github.com/yetanotherchris/ask-llm). 
+#### Scripts
+A few experimental scripts and prompts are in this repo using [ask-llm](https://github.com/yetanotherchris/ask-llm), to be deleted.
 
-There's also some examples of getting LLMs to talk to each other.  
+## Docker
 
-The repo is largely prompts with scripts to use the prompts with `ask-llm`.
+**Build:**
+
+```
+docker build -t consensus . ; docker image prune -f
+# pwsh: docker build -t consensus . && docker image prune -f
+```
+
+**Run:**
+
+```shell
+docker run --rm \
+    -v $(pwd):/app/data \
+    -e CONSENSUS_API_ENDPOINT=https://openrouter.ai/api/v1 \
+    -e CONSENSUS_API_KEY=your-key-here \
+    -e PROMPT_FILE=/app/data/prompt.txt \
+    -e MODELS_FILE=/app/data/models.txt \
+    -e OUTPUT_FILENAMES_ID=custom-id \
+    consensus
+```
+
+```shell
+docker run --rm `
+    -v "${PWD}:/app/data" `
+    -e CONSENSUS_API_ENDPOINT="https://openrouter.ai/api/v1" `
+    -e CONSENSUS_API_KEY="your-key-here" `
+    -e PROMPT_FILE="/app/data/prompt.txt" `
+    -e MODELS_FILE="/app/data/models.txt" `
+    -e OUTPUT_FILENAMES_ID="custom-id" `
+    consensus
+```

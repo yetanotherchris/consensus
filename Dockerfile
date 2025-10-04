@@ -53,14 +53,3 @@ exec /app/consensus $ARGS\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-
-# Usage:
-# Build: docker build -t consensus .
-# Run:   docker run --rm \
-#          -v $(pwd):/app/data \
-#          -e CONSENSUS_API_ENDPOINT=https://openrouter.ai/api/v1 \
-#          -e CONSENSUS_API_KEY=your-key-here \
-#          -e PROMPT_FILE=/app/data/prompt.txt \
-#          -e MODELS_FILE=/app/data/models.txt \
-#          -e OUTPUT_FILENAMES_ID=custom-id \
-#          consensus
