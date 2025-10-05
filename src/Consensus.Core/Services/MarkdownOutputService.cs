@@ -1,5 +1,5 @@
-using Consensus.Logging;
 using Consensus.Models;
+using Microsoft.Extensions.Logging;
 using TextTemplate;
 
 namespace Consensus.Services;
@@ -9,11 +9,11 @@ namespace Consensus.Services;
 /// </summary>
 public class MarkdownOutputService : IMarkdownOutputService
 {
-    private readonly SimpleFileLogger _logger;
+    private readonly ILogger<MarkdownOutputService> _logger;
     private readonly IOutputWriter _fileWriter;
     private readonly string _outputTemplatePath;
 
-    public MarkdownOutputService(SimpleFileLogger logger, IOutputWriter fileWriter)
+    public MarkdownOutputService(ILogger<MarkdownOutputService> logger, IOutputWriter fileWriter)
     {
         _logger = logger;
         _fileWriter = fileWriter;

@@ -40,6 +40,4 @@ public class ConsensusConfiguration
     /// Whether to include individual model responses in the output
     /// </summary>
     public bool IncludeIndividualResponses { get; init; } = true;
-    
-    public string OutputDirectory { get; init; } = ".";
 }

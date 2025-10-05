@@ -1,6 +1,6 @@
-using Consensus.Logging;
 using Consensus.Models;
 using Markdig;
+using Microsoft.Extensions.Logging;
 using TextTemplate;
 
 namespace Consensus.Services;
@@ -10,12 +10,12 @@ namespace Consensus.Services;
 /// </summary>
 public class HtmlOutputService : IHtmlOutputService
 {
-    private readonly SimpleFileLogger _logger;
+    private readonly ILogger<HtmlOutputService> _logger;
     private readonly IOutputWriter _fileWriter;
     private readonly string _htmlTemplatePath;
     private readonly MarkdownPipeline _markdownPipeline;
 
-    public HtmlOutputService(SimpleFileLogger logger, IOutputWriter fileWriter)
+    public HtmlOutputService(ILogger<HtmlOutputService> logger, IOutputWriter fileWriter)
     {
         _logger = logger;
         _fileWriter = fileWriter;

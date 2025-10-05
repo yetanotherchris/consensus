@@ -57,13 +57,13 @@ class Program
                 {
                     ApiEndpoint = settings.ApiEndpoint,
                     ApiKey = settings.ApiKey,
-                    OutputDirectory = outputDir
                 };
 
                 // Setup dependency injection
                 var services = new ServiceCollection();
-                services.AddConsensusServices(config, settings.OutputFilenamesId)
-                        .AddSimpleFileLogger(config, settings.OutputFilenamesId);
+                services.AddConsensus(config)
+                        .AddSimpleFileLogger(outputDir, settings.OutputFilenamesId)
+                        .AddFileOutputWriter(outputDir, settings.OutputFilenamesId);
                 var serviceProvider = services.BuildServiceProvider();
 
                 // Get logger for Program
@@ -82,8 +82,8 @@ class Program
                 // Calculate output paths for logging
                 var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
                 var filenameIdentifier = settings.OutputFilenamesId ?? timestamp;
-                var consensusFile = Path.Combine(config.OutputDirectory, "output", "responses", $"consensus-{filenameIdentifier}.md");
-                var logFile = Path.Combine(config.OutputDirectory, "output", "logs", $"conversation-log-{filenameIdentifier}.txt");
+                var consensusFile = Path.Combine(outputDir, "output", "responses", $"consensus-{filenameIdentifier}.md");
+                var logFile = Path.Combine(outputDir, "output", "logs", $"conversation-log-{filenameIdentifier}.txt");
 
                 logger.LogInformation("✓ Consensus saved to: {ConsensusFile}", consensusFile);
                 logger.LogInformation("✓ Conversation log saved to: {LogFile}", logFile);

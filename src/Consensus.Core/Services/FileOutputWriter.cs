@@ -1,5 +1,4 @@
-using Consensus.Configuration;
-using Consensus.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Consensus.Services;
 
@@ -8,16 +7,16 @@ namespace Consensus.Services;
 /// </summary>
 public class FileOutputWriter : IOutputWriter
 {
-    private readonly SimpleFileLogger _logger;
-    private readonly ConsensusConfiguration _config;
+    private readonly ILogger<FileOutputWriter> _logger;
+    private readonly string _outputDirectory;
     private readonly string? _outputFilenamesId;
     private readonly string _timestamp;
     private readonly string _filenameIdentifier;
 
-    public FileOutputWriter(SimpleFileLogger logger, ConsensusConfiguration config, string? outputFilenamesId = null)
+    public FileOutputWriter(ILogger<FileOutputWriter> logger, string outputDirectory, string? outputFilenamesId = null)
     {
         _logger = logger;
-        _config = config;
+        _outputDirectory = outputDirectory;
         _outputFilenamesId = outputFilenamesId;
         _timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         _filenameIdentifier = outputFilenamesId ?? _timestamp;
@@ -32,9 +31,9 @@ public class FileOutputWriter : IOutputWriter
     {
         var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"output-{filenameIdentifier}.html";
-        var filePath = Path.Combine(_config.OutputDirectory, "output", "responses", fileName);
+        var filePath = Path.Combine(_outputDirectory, "output", "responses", fileName);
         
-        _logger.LogInformation("Writing HTML output to file: {0}", filePath);
+        _logger.LogInformation("Writing HTML output to file: {FilePath}", filePath);
         
         EnsureDirectoryExists(filePath);
         
@@ -52,9 +51,9 @@ public class FileOutputWriter : IOutputWriter
     {
         var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"consensus-{filenameIdentifier}.md";
-        var filePath = Path.Combine(_config.OutputDirectory, "output", "responses", fileName);
+        var filePath = Path.Combine(_outputDirectory, "output", "responses", fileName);
         
-        _logger.LogInformation("Writing Markdown output to file: {0}", filePath);
+        _logger.LogInformation("Writing Markdown output to file: {FilePath}", filePath);
         
         EnsureDirectoryExists(filePath);
         
