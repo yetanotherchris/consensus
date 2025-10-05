@@ -10,6 +10,8 @@
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251002.1" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+    <PackageVersion Include="Quartz" Version="3.13.1" />
+    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.13.1" />
     <PackageVersion Include="redis-ilogger" Version="1.0.8" />
     <PackageVersion Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.9.25" />
