@@ -103,14 +103,22 @@ public class ConsensusController : ControllerBase
     /// <summary>
     /// Start a new consensus building job
     /// </summary>
-    /// <param name="runId">The run ID for this job</param>
+    /// <param name="request">The prompt request containing the text to process</param>
     /// <returns>Job status information</returns>
-    [HttpPost("{runId}/start")]
+    [HttpPost("start")]
     [ProducesResponseType(typeof(JobStatusModel), StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<JobStatusModel>> StartJob(string runId)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<JobStatusModel>> StartJob([FromBody] PromptRequest request)
     {
-        _logger.LogInformation("Starting job for runId: {RunId}", runId);
+        if (string.IsNullOrWhiteSpace(request?.Prompt))
+        {
+            return BadRequest(new { message = "Prompt text is required" });
+        }
+
+        // Generate a unique run ID
+        var runId = Guid.NewGuid().ToString();
+        
+        _logger.LogInformation("Starting job for runId: {RunId} with prompt: {Prompt}", runId, request.Prompt);
 
         // Schedule the job with Quartz
         var scheduled = await _jobScheduler.ScheduleConsensusJobAsync(runId);
