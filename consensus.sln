@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consensus.Console", "src\Co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consensus.RedisTest", "src\Consensus.RedisTest\Consensus.RedisTest.csproj", "{284066DF-2ED4-E637-7992-432BA6C2A58A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consensus.Api", "src\Consensus.Api\Consensus.Api.csproj", "{4EEEB097-2892-EEFB-F037-75D06199F1B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +30,10 @@ Global
 		{284066DF-2ED4-E637-7992-432BA6C2A58A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{284066DF-2ED4-E637-7992-432BA6C2A58A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{284066DF-2ED4-E637-7992-432BA6C2A58A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EEEB097-2892-EEFB-F037-75D06199F1B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EEEB097-2892-EEFB-F037-75D06199F1B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EEEB097-2892-EEFB-F037-75D06199F1B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EEEB097-2892-EEFB-F037-75D06199F1B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -36,6 +42,7 @@ Global
 		{A1B2C3D4-5E6F-7A8B-9C0D-1E2F3A4B5C6D} = {53ED9A80-99DB-33A9-085E-D4822CAA6D32}
 		{B2C3D4E5-6F7A-8B9C-0D1E-2F3A4B5C6D7E} = {53ED9A80-99DB-33A9-085E-D4822CAA6D32}
 		{284066DF-2ED4-E637-7992-432BA6C2A58A} = {53ED9A80-99DB-33A9-085E-D4822CAA6D32}
+		{4EEEB097-2892-EEFB-F037-75D06199F1B5} = {53ED9A80-99DB-33A9-085E-D4822CAA6D32}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F5F65956-439C-472D-8ECF-7A6FDC4A0894}
