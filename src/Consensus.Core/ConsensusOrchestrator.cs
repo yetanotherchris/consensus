@@ -13,7 +13,7 @@ namespace Consensus;
 public class ConsensusOrchestrator
 {
     private readonly ConsensusConfiguration _config;
-    private readonly SimpleLogger _logger;
+    private readonly SimpleFileLogger _logger;
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISynthesizerService _synthesizerService;
@@ -22,7 +22,7 @@ public class ConsensusOrchestrator
 
     public ConsensusOrchestrator(
         ConsensusConfiguration config,
-        SimpleLogger logger,
+        SimpleFileLogger logger,
         IAgentService agentService,
         IPromptBuilder promptBuilder,
         ISynthesizerService synthesizerService,
@@ -41,14 +41,19 @@ public class ConsensusOrchestrator
     /// <summary>
     /// Execute the parallel-then-synthesize consensus workflow
     /// </summary>
-    public async Task<ConsensusResult> GetConsensusAsync(string prompt)
+    /// <param name="prompt">The prompt to send to all models</param>
+    /// <param name="models">Array of model names to query</param>
+    public async Task<ConsensusResult> GetConsensusAsync(string prompt, string[] models)
     {
         var stopwatch = Stopwatch.StartNew();
         
+        // Calculate minimum agents required: at least 2/3 of models, minimum of 3
+        int minimumAgentsRequired = Math.Max(3, models.Length * 2 / 3);
+        
         _logger.LogInformation("=== CONSENSUS BUILDING STARTED (Parallel-then-Synthesize) ===");
-        _logger.LogInformation("Models: {0}", string.Join(", ", _config.Models));
+        _logger.LogInformation("Models: {0}", string.Join(", ", models));
         _logger.LogInformation("Timeout per agent: {0}s", _config.AgentTimeoutSeconds);
-        _logger.LogInformation("Minimum agents required: {0}", _config.MinimumAgentsRequired);
+        _logger.LogInformation("Minimum agents required: {0}", minimumAgentsRequired);
 
         // Create consensus request
         var request = new ConsensusRequest
@@ -58,33 +63,34 @@ public class ConsensusOrchestrator
             IncludeReasoning = true,
             IncludeConfidence = true,
             IncludeTheoreticalFramework = false,
-            MinimumAgents = _config.MinimumAgentsRequired
+            MinimumAgents = minimumAgentsRequired
         };
 
         // Initialize agents
         _logger.LogInformation("Initializing agents for each model...");
-        await _agentService.InitializeAgentsAsync(_config.Models, _config.ApiEndpoint, _config.ApiKey);
-        _logger.LogInformation("✓ Initialized {0} agent contexts", _config.Models.Length);
+        await _agentService.InitializeAgentsAsync(models, _config.ApiEndpoint, _config.ApiKey);
+        _logger.LogInformation("✓ Initialized {0} agent contexts", models.Length);
 
         // Phase 1: Divergent Collection (Parallel)
         _logger.LogInformation("=== PHASE 1: DIVERGENT COLLECTION (PARALLEL) ===");
-        var responses = await CollectResponsesAsync(request);
+        var responses = await CollectResponsesAsync(request, models);
 
         // Check minimum threshold
-        if (responses.Count < _config.MinimumAgentsRequired)
+        if (responses.Count < minimumAgentsRequired)
         {
             throw new InvalidOperationException(
-                $"Only {responses.Count} of {_config.Models.Length} agents responded successfully. " +
-                $"Minimum required: {_config.MinimumAgentsRequired}");
+                $"Only {responses.Count} of {models.Length} agents responded successfully. " +
+                $"Minimum required: {minimumAgentsRequired}");
         }
 
         _logger.LogInformation("✓ Collected {0} responses (minimum: {1})", 
-            responses.Count, _config.MinimumAgentsRequired);
+            responses.Count, minimumAgentsRequired);
 
         // Phase 2: Convergent Synthesis
         _logger.LogInformation("=== PHASE 2: CONVERGENT SYNTHESIS ===");
         using var synthesisCts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds * 2));
-        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, synthesisCts.Token);
+        string judgeModel = models[0];
+        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, judgeModel, synthesisCts.Token);
 
         stopwatch.Stop();
         result.TotalProcessingTime = stopwatch.Elapsed;
@@ -99,15 +105,17 @@ public class ConsensusOrchestrator
     /// <summary>
     /// Collect responses from all models in parallel (Phase 1: Divergent)
     /// </summary>
-    public async Task<List<ModelResponse>> CollectResponsesAsync(ConsensusRequest request)
+    /// <param name="request">The consensus request</param>
+    /// <param name="models">Array of model names to query</param>
+    public async Task<List<ModelResponse>> CollectResponsesAsync(ConsensusRequest request, string[] models)
     {
         // Build enhanced prompt
         string enhancedPrompt = _promptBuilder.BuildEnhancedDivergentPrompt(request);
         
-        _logger.LogInformation("Querying {0} models in parallel...", _config.Models.Length);
+        _logger.LogInformation("Querying {0} models in parallel...", models.Length);
 
         // Create tasks for all models with individual timeouts
-        var queryTasks = _config.Models.Select(async model =>
+        var queryTasks = models.Select(async model =>
         {
             try
             {

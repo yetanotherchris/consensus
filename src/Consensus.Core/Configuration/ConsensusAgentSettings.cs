@@ -5,8 +5,6 @@ namespace Consensus.Configuration;
 /// </summary>
 public class ConsensusAgentSettings
 {
-    public string PromptFile { get; init; } = string.Empty;
-    public string ModelsFile { get; init; } = string.Empty;
     public string ApiEndpoint { get; init; } = string.Empty;
     public string ApiKey { get; init; } = string.Empty;
     public string[] Models { get; init; } = Array.Empty<string>();
@@ -15,8 +13,8 @@ public class ConsensusAgentSettings
     /// <summary>
     /// Creates settings from file paths and environment variables.
     /// </summary>
-    /// <param name="promptFile">Path to the prompt file</param>
-    /// <param name="modelsFile">Path to the models file</param>
+    /// <param name="promptFile">Path to the prompt file (used only for validation)</param>
+    /// <param name="modelsFile">Path to the models file (read but not stored)</param>
     /// <param name="outputFilenamesId">Optional custom ID for output filenames</param>
     /// <returns>Validated settings instance</returns>
     /// <exception cref="SettingsException">Thrown when validation fails</exception>
@@ -68,8 +66,6 @@ public class ConsensusAgentSettings
 
         return new ConsensusAgentSettings
         {
-            PromptFile = promptFile,
-            ModelsFile = modelsFile,
             ApiEndpoint = apiEndpoint,
             ApiKey = apiKey,
             Models = models,

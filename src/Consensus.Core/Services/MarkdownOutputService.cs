@@ -9,11 +9,11 @@ namespace Consensus.Services;
 /// </summary>
 public class MarkdownOutputService : IMarkdownOutputService
 {
-    private readonly SimpleLogger _logger;
+    private readonly SimpleFileLogger _logger;
     private readonly IOutputWriter _fileWriter;
     private readonly string _outputTemplatePath;
 
-    public MarkdownOutputService(SimpleLogger logger, IOutputWriter fileWriter)
+    public MarkdownOutputService(SimpleFileLogger logger, IOutputWriter fileWriter)
     {
         _logger = logger;
         _fileWriter = fileWriter;

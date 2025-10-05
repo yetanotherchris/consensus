@@ -13,13 +13,13 @@ public class SynthesizerService : ISynthesizerService
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ConsensusConfiguration _config;
-    private readonly SimpleLogger _logger;
+    private readonly SimpleFileLogger _logger;
 
     public SynthesizerService(
         IAgentService agentService,
         IPromptBuilder promptBuilder,
         ConsensusConfiguration config,
-        SimpleLogger logger)
+        SimpleFileLogger logger)
     {
         _agentService = agentService;
         _promptBuilder = promptBuilder;
@@ -30,6 +30,7 @@ public class SynthesizerService : ISynthesizerService
     public async Task<ConsensusResult> SynthesizeAsync(
         string originalPrompt, 
         List<ModelResponse> responses, 
+        string judgeModel,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting synthesis of {0} responses...", responses.Count);
@@ -37,12 +38,11 @@ public class SynthesizerService : ISynthesizerService
         // Build the judge prompt
         string judgePrompt = _promptBuilder.BuildJudgeSynthesisPrompt(originalPrompt, responses);
 
-        // Query the judge model (use first model as judge)
-        string judgeModelName = _config.Models[0];
-        _logger.LogInformation("Using {0} as synthesis judge...", judgeModelName);
+        // Query the judge model
+        _logger.LogInformation("Using {0} as synthesis judge...", judgeModel);
 
         string synthesisResponse = await _agentService.QueryModelOneOffAsync(
-            judgeModelName,
+            judgeModel,
             judgePrompt,
             _config.ApiEndpoint,
             _config.ApiKey,

@@ -13,10 +13,10 @@ namespace Consensus.Services;
 /// </summary>
 public class AgentService : IAgentService
 {
-    private readonly SimpleLogger _logger;
+    private readonly SimpleFileLogger _logger;
     private readonly Dictionary<string, (AIAgent agent, AgentThread thread)> _modelContexts = new();
 
-    public AgentService(SimpleLogger logger)
+    public AgentService(SimpleFileLogger logger)
     {
         _logger = logger;
     }

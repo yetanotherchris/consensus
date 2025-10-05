@@ -49,25 +49,21 @@ class Program
                 var settings = ConsensusAgentSettings.CreateFromArgsAndEnvironment(promptFile, modelsFile, outputFilenamesId);
 
                 // Read prompt file content
-                string prompt = await File.ReadAllTextAsync(settings.PromptFile);
+                string prompt = await File.ReadAllTextAsync(promptFile);
 
                 // Setup configuration
-                string outputDir = Path.GetDirectoryName(settings.PromptFile) ?? ".";
+                string outputDir = Path.GetDirectoryName(promptFile) ?? ".";
                 var config = new ConsensusConfiguration
                 {
-                    PromptFile = settings.PromptFile,
-                    ModelsFile = settings.ModelsFile,
                     ApiEndpoint = settings.ApiEndpoint,
                     ApiKey = settings.ApiKey,
-                    Models = settings.Models,
-                    MinimumAgentsRequired = Math.Max(3, settings.Models.Length * 2 / 3), // At least 2/3 of models
-                    OutputDirectory = outputDir,
-                    OutputFilenamesId = settings.OutputFilenamesId
+                    OutputDirectory = outputDir
                 };
 
                 // Setup dependency injection
                 var services = new ServiceCollection();
-                services.AddConsensusServices(config);
+                services.AddConsensusServices(config, settings.OutputFilenamesId)
+                        .AddSimpleFileLogger(config, settings.OutputFilenamesId);
                 var serviceProvider = services.BuildServiceProvider();
 
                 // Get logger for Program
@@ -75,18 +71,22 @@ class Program
 
                 logger.LogInformation("Starting parallel-then-synthesize consensus with {ModelCount} models...", settings.Models.Length);
                 logger.LogInformation("Agent timeout: {AgentTimeout} seconds", config.AgentTimeoutSeconds);
-                logger.LogInformation("Minimum agents required: {MinimumAgents}", config.MinimumAgentsRequired);
-                logger.LogInformation("📝 Log file: {LogFile}", config.LogFile);
 
                 // Get orchestrator and run consensus process
                 var orchestrator = serviceProvider.GetRequiredService<ConsensusOrchestrator>();
-                var result = await orchestrator.GetConsensusAsync(prompt);
+                var result = await orchestrator.GetConsensusAsync(prompt, settings.Models);
 
                 // Save consensus output
                 await orchestrator.SaveConsensusAsync(result);
 
-                logger.LogInformation("✓ Consensus saved to: {ConsensusFile}", config.ConsensusFile);
-                logger.LogInformation("✓ Conversation log saved to: {LogFile}", config.LogFile);
+                // Calculate output paths for logging
+                var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+                var filenameIdentifier = settings.OutputFilenamesId ?? timestamp;
+                var consensusFile = Path.Combine(config.OutputDirectory, "output", "responses", $"consensus-{filenameIdentifier}.md");
+                var logFile = Path.Combine(config.OutputDirectory, "output", "logs", $"conversation-log-{filenameIdentifier}.txt");
+
+                logger.LogInformation("✓ Consensus saved to: {ConsensusFile}", consensusFile);
+                logger.LogInformation("✓ Conversation log saved to: {LogFile}", logFile);
                 logger.LogInformation("✓ Consensus level: {ConsensusLevel}", result.ConsensusLevel);
                 logger.LogInformation("✓ Processing time: {ProcessingTime:F2}s", result.TotalProcessingTime.TotalSeconds);
             }

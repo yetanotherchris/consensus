@@ -5,12 +5,12 @@ namespace Consensus.Logging;
 /// <summary>
 /// Simple logger that outputs in format: [LEVEL][DATETIME] Message
 /// </summary>
-public class SimpleLogger
+public class SimpleFileLogger
 {
     private readonly string _logFilePath;
     private readonly object _lock = new();
 
-    public SimpleLogger(string logFilePath)
+    public SimpleFileLogger(string logFilePath)
     {
         _logFilePath = logFilePath;
         

@@ -5,12 +5,9 @@ namespace Consensus.Configuration;
 /// </summary>
 public class ConsensusConfiguration
 {
-    // File and API configuration
-    public required string PromptFile { get; init; }
-    public required string ModelsFile { get; init; }
+    // API configuration
     public required string ApiEndpoint { get; init; }
     public required string ApiKey { get; init; }
-    public required string[] Models { get; init; }
     
     // Domain configuration
     /// <summary>
@@ -24,11 +21,6 @@ public class ConsensusConfiguration
     /// Timeout in seconds for each individual agent query
     /// </summary>
     public int AgentTimeoutSeconds { get; init; } = 120;
-    
-    /// <summary>
-    /// Minimum number of agents that must successfully respond to proceed
-    /// </summary>
-    public int MinimumAgentsRequired { get; init; } = 3;
     
     // Caching configuration (not yet implemented)
     /// <summary>
@@ -50,15 +42,4 @@ public class ConsensusConfiguration
     public bool IncludeIndividualResponses { get; init; } = true;
     
     public string OutputDirectory { get; init; } = ".";
-    public string Timestamp { get; init; } = DateTime.Now.ToString("yyyyMMddHHmmss");
-    
-    /// <summary>
-    /// Optional custom ID for output filenames. If provided, replaces the timestamp.
-    /// </summary>
-    public string? OutputFilenamesId { get; init; }
-    
-    private string FilenameIdentifier => OutputFilenamesId ?? Timestamp;
-    
-    public string LogFile => Path.Combine(OutputDirectory, "output", "logs", $"conversation-log-{FilenameIdentifier}.txt");
-    public string ConsensusFile => Path.Combine(OutputDirectory, "output", "responses", $"consensus-{FilenameIdentifier}.md");
 }

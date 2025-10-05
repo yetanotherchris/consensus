@@ -8,23 +8,29 @@ namespace Consensus.Services;
 /// </summary>
 public class FileOutputWriter : IOutputWriter
 {
-    private readonly SimpleLogger _logger;
+    private readonly SimpleFileLogger _logger;
     private readonly ConsensusConfiguration _config;
+    private readonly string? _outputFilenamesId;
+    private readonly string _timestamp;
+    private readonly string _filenameIdentifier;
 
-    public FileOutputWriter(SimpleLogger logger, ConsensusConfiguration config)
+    public FileOutputWriter(SimpleFileLogger logger, ConsensusConfiguration config, string? outputFilenamesId = null)
     {
         _logger = logger;
         _config = config;
+        _outputFilenamesId = outputFilenamesId;
+        _timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        _filenameIdentifier = outputFilenamesId ?? _timestamp;
     }
 
     /// <summary>
     /// Write HTML content to a file
     /// </summary>
     /// <param name="content">The HTML content to write</param>
-    /// <param name="id">Optional identifier for the output. If null, uses timestamp from configuration</param>
+    /// <param name="id">Optional identifier for the output. If null, uses internal filename identifier</param>
     public async Task WriteHtmlAsync(string content, string? id = null)
     {
-        var filenameIdentifier = id ?? _config.OutputFilenamesId ?? DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"output-{filenameIdentifier}.html";
         var filePath = Path.Combine(_config.OutputDirectory, "output", "responses", fileName);
         
@@ -41,10 +47,10 @@ public class FileOutputWriter : IOutputWriter
     /// Write Markdown content to a file
     /// </summary>
     /// <param name="content">The Markdown content to write</param>
-    /// <param name="id">Optional identifier for the output. If null, uses timestamp from configuration</param>
+    /// <param name="id">Optional identifier for the output. If null, uses internal filename identifier</param>
     public async Task WriteMarkdownAsync(string content, string? id = null)
     {
-        var filenameIdentifier = id ?? _config.OutputFilenamesId ?? DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"consensus-{filenameIdentifier}.md";
         var filePath = Path.Combine(_config.OutputDirectory, "output", "responses", fileName);
         
