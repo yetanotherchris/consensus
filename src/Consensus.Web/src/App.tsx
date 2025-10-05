@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  Container,
   Box,
   Typography,
   ThemeProvider,
@@ -112,68 +111,57 @@ function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          py: 4,
+          px: 3,
         }}
       >
-        <Container maxWidth="lg">
-          <Box
-            sx={{
-              bgcolor: 'background.paper',
-              borderRadius: 4,
-              boxShadow: 3,
-              p: 4,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Header */}
-              <Box sx={{ textAlign: 'center', mb: 2 }}>
-                <Typography variant="h3" component="h1" sx={{ fontWeight: 600, mb: 1 }}>
-                  Consensus Builder
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Submit a prompt to generate consensus from multiple AI agents
-                </Typography>
-              </Box>
-
-              {/* Error Alert */}
-              {error && (
-                <Alert severity="error" onClose={() => setError('')}>
-                  {error}
-                </Alert>
-              )}
-
-              {/* Prompt Input */}
-              <PromptInput
-                onSubmit={handleSubmitPrompt}
-                disabled={isSubmitting || isJobRunning}
-              />
-
-              {/* Loading State */}
-              {isSubmitting && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              )}
-
-              {/* Job Running - Show Logs */}
-              {isJobRunning && (
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    Processing... (Run ID: {jobStatus.runId})
-                  </Typography>
-                  <LogViewer logs={logs} />
-                </Box>
-              )}
-
-              {/* Job Finished - Show Result */}
-              {isJobFinished && html && (
-                <ResultViewer html={html} logs={logs} runId={jobStatus.runId} />
-              )}
+        <Box sx={{ width: '100%', maxWidth: '1040px', mx: 'auto' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Header */}
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Typography variant="h3" component="h1" sx={{ fontWeight: 600, mb: 1 }}>
+                Consensus Builder
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Submit a prompt to generate consensus from multiple AI agents
+              </Typography>
             </Box>
+
+            {/* Error Alert */}
+            {error && (
+              <Alert severity="error" onClose={() => setError('')}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Prompt Input */}
+            <PromptInput
+              onSubmit={handleSubmitPrompt}
+              disabled={isSubmitting || isJobRunning}
+            />
+
+            {/* Loading State */}
+            {isSubmitting && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            )}
+
+            {/* Job Running - Show Logs */}
+            {isJobRunning && (
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Processing... (Run ID: {jobStatus.runId})
+                </Typography>
+                <LogViewer logs={logs} />
+              </Box>
+            )}
+
+            {/* Job Finished - Show Result */}
+            {isJobFinished && html && (
+              <ResultViewer html={html} logs={logs} runId={jobStatus.runId} />
+            )}
           </Box>
-        </Container>
+        </Box>
       </Box>
     </ThemeProvider>
   );

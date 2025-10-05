@@ -1,56 +1,61 @@
-import React from 'react';
-import { Box, Paper, Typography, List, ListItem, ListItemText } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Paper, Typography } from '@mui/material';
+import { LazyLog } from 'react-lazylog';
 import type { LogEntryModel } from '../types/api';
+
+// Theme colors
+const COLORS = {
+  background: '#1e1e1e',
+  text: '#d4d4d4',
+  textMuted: '#888',
+} as const;
+
+// Style configurations
+const PAPER_STYLES = {
+  p: 2,
+  bgcolor: COLORS.background,
+  borderRadius: 2,
+  width: '100%',
+} as const;
 
 interface LogViewerProps {
   logs: LogEntryModel[];
 }
 
 export const LogViewer: React.FC<LogViewerProps> = ({ logs }) => {
+  const logText = useMemo(() => {
+    if (logs.length === 0) {
+      return 'No logs available yet...';
+    }
+    
+    return logs
+      .map(log => {
+        const timestamp = new Date(log.timestamp).toLocaleTimeString();
+        return `[${timestamp}] ${log.message}`;
+      })
+      .join('\n');
+  }, [logs]);
+
   return (
-    <Paper
-      elevation={2}
-      sx={{
-        p: 2,
-        maxHeight: '400px',
-        overflowY: 'auto',
-        bgcolor: '#1e1e1e',
-        color: '#d4d4d4',
-        fontFamily: 'monospace',
-        borderRadius: 2,
-      }}
-    >
-      <Typography variant="h6" sx={{ mb: 2, color: '#d4d4d4' }}>
+    <Paper elevation={2} sx={PAPER_STYLES}>
+      <Typography variant="h6" sx={{ mb: 2, color: COLORS.text }}>
         Logs
       </Typography>
-      {logs.length === 0 ? (
-        <Typography sx={{ color: '#888' }}>No logs available yet...</Typography>
-      ) : (
-        <List dense sx={{ p: 0 }}>
-          {logs.map((log, index) => (
-            <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Typography
-                      component="span"
-                      sx={{ color: '#4ec9b0', fontSize: '0.85rem' }}
-                    >
-                      [{new Date(log.timestamp).toLocaleTimeString()}]
-                    </Typography>
-                    <Typography
-                      component="span"
-                      sx={{ color: '#d4d4d4', fontSize: '0.85rem' }}
-                    >
-                      {log.message}
-                    </Typography>
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-      )}
+      <div style={{ height: '400px', backgroundColor: COLORS.background }}>
+        <LazyLog
+          text={logText}
+          enableSearch={false}
+          follow
+          selectableLines
+          extraLines={1}
+          style={{
+            backgroundColor: COLORS.background,
+            color: COLORS.text,
+            fontSize: '13px',
+            lineHeight: '1.4',
+          }}
+        />
+      </div>
     </Paper>
   );
 };

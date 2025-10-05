@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { TextField, IconButton, Paper } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
+import { Box, IconButton, InputBase } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -18,51 +18,82 @@ export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, disabled = f
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
-    <Paper
+    <Box
       component="form"
       onSubmit={handleSubmit}
-      elevation={3}
       sx={{
-        p: 2,
-        display: 'flex',
-        alignItems: 'flex-end',
-        gap: 1,
-        borderRadius: 3,
+        position: 'relative',
+        width: '100%',
+        maxWidth: '700px',
+        margin: '0 auto',
       }}
     >
-      <TextField
-        fullWidth
-        multiline
-        maxRows={6}
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Enter your prompt here..."
-        disabled={disabled}
-        variant="standard"
+      <Box
         sx={{
-          '& .MuiInputBase-root': {
-            fontSize: '1rem',
-          },
-        }}
-      />
-      <IconButton
-        type="submit"
-        color="primary"
-        disabled={!prompt.trim() || disabled}
-        sx={{
-          bgcolor: 'primary.main',
-          color: 'white',
-          '&:hover': {
-            bgcolor: 'primary.dark',
-          },
-          '&.Mui-disabled': {
-            bgcolor: 'action.disabledBackground',
+          display: 'flex',
+          alignItems: 'flex-end',
+          backgroundColor: '#fff',
+          borderRadius: '24px',
+          border: '1px solid #e0e0e0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          padding: '12px 16px',
+          transition: 'box-shadow 0.2s, border-color 0.2s',
+          '&:focus-within': {
+            borderColor: '#10a37f',
+            boxShadow: '0 4px 12px rgba(16,163,127,0.15)',
           },
         }}
       >
-        <SendIcon />
-      </IconButton>
-    </Paper>
+        <InputBase
+          multiline
+          minRows={3}
+          maxRows={8}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter your prompt here..."
+          disabled={disabled}
+          sx={{
+            flex: 1,
+            fontSize: '16px',
+            lineHeight: '1.5',
+            '& textarea': {
+              resize: 'none',
+            },
+          }}
+        />
+        <IconButton
+          type="submit"
+          disabled={!prompt.trim() || disabled}
+          sx={{
+            marginLeft: 1,
+            padding: '8px',
+            backgroundColor: prompt.trim() && !disabled ? '#10a37f' : '#e0e0e0',
+            color: '#fff',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            '&:hover': {
+              backgroundColor: prompt.trim() && !disabled ? '#0d8a68' : '#e0e0e0',
+            },
+            '&.Mui-disabled': {
+              backgroundColor: '#e0e0e0',
+              color: '#999',
+            },
+            transition: 'background-color 0.2s',
+          }}
+        >
+          <ArrowUpwardIcon sx={{ fontSize: '20px' }} />
+        </IconButton>
+      </Box>
+    </Box>
   );
 };
