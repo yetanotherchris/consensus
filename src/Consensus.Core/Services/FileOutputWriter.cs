@@ -9,7 +9,6 @@ public class FileOutputWriter : IOutputWriter
 {
     private readonly ILogger<FileOutputWriter> _logger;
     private readonly string _outputDirectory;
-    private readonly string? _outputFilenamesId;
     private readonly string _timestamp;
     private readonly string _filenameIdentifier;
 
@@ -17,7 +16,6 @@ public class FileOutputWriter : IOutputWriter
     {
         _logger = logger;
         _outputDirectory = outputDirectory;
-        _outputFilenamesId = outputFilenamesId;
         _timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         _filenameIdentifier = outputFilenamesId ?? _timestamp;
     }
