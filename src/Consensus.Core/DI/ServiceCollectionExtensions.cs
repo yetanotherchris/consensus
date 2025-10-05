@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentService, AgentService>();
         services.AddTransient<IPromptBuilder, PromptBuilder>();
         services.AddTransient<ISynthesizerService, SynthesizerService>();
+        services.AddTransient<IOutputWriter, FileOutputWriter>();
         services.AddTransient<IMarkdownOutputService, MarkdownOutputService>();
         services.AddTransient<IHtmlOutputService, HtmlOutputService>();
         services.AddTransient<ConsensusOrchestrator>();

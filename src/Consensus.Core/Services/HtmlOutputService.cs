@@ -11,12 +11,14 @@ namespace Consensus.Services;
 public class HtmlOutputService : IHtmlOutputService
 {
     private readonly SimpleLogger _logger;
+    private readonly IOutputWriter _fileWriter;
     private readonly string _htmlTemplatePath;
     private readonly MarkdownPipeline _markdownPipeline;
 
-    public HtmlOutputService(SimpleLogger logger)
+    public HtmlOutputService(SimpleLogger logger, IOutputWriter fileWriter)
     {
         _logger = logger;
+        _fileWriter = fileWriter;
         _markdownPipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
@@ -26,21 +28,15 @@ public class HtmlOutputService : IHtmlOutputService
         _htmlTemplatePath = Path.Combine(baseDirectory, "Templates", "ConsensusOutput.html.tmpl");
     }
 
-    public async Task SaveConsensusResultAsync(ConsensusResult result, string filePath)
+    public async Task SaveConsensusResultAsync(ConsensusResult result, string? id = null)
     {
-        _logger.LogInformation("Saving consensus result to HTML file: {0}", filePath);
+        _logger.LogInformation("Saving consensus result to HTML file");
         
-        // Ensure directory exists
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
         // Format the result as HTML
         string htmlOutput = FormatConsensusResult(result);
         
-        await File.WriteAllTextAsync(filePath, htmlOutput);
+        // Delegate file writing to the file writer service
+        await _fileWriter.WriteHtmlAsync(htmlOutput, id);
         
         _logger.LogInformation("HTML consensus result saved successfully");
     }

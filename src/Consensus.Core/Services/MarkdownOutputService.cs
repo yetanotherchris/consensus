@@ -10,32 +10,28 @@ namespace Consensus.Services;
 public class MarkdownOutputService : IMarkdownOutputService
 {
     private readonly SimpleLogger _logger;
+    private readonly IOutputWriter _fileWriter;
     private readonly string _outputTemplatePath;
 
-    public MarkdownOutputService(SimpleLogger logger)
+    public MarkdownOutputService(SimpleLogger logger, IOutputWriter fileWriter)
     {
         _logger = logger;
+        _fileWriter = fileWriter;
         
         // Template is copied to output directory by the build process
         var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         _outputTemplatePath = Path.Combine(baseDirectory, "Templates", "ConsensusOutput.tmpl");
     }
 
-    public async Task SaveConsensusResultAsync(ConsensusResult result, string filePath)
+    public async Task SaveConsensusResultAsync(ConsensusResult result, string? id = null)
     {
-        _logger.LogInformation("Saving consensus result to file: {0}", filePath);
+        _logger.LogInformation("Saving consensus result to Markdown file");
         
-        // Ensure directory exists
-        var directory = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
         // Format the result as Markdown
         string formattedOutput = FormatConsensusResult(result);
         
-        await File.WriteAllTextAsync(filePath, formattedOutput);
+        // Delegate file writing to the file writer service
+        await _fileWriter.WriteMarkdownAsync(formattedOutput, id);
         
         _logger.LogInformation("Consensus result saved successfully");
     }

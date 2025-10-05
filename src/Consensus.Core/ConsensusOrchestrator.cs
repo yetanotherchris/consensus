@@ -146,19 +146,14 @@ public class ConsensusOrchestrator
     }
 
     /// <summary>
-    /// Save consensus result to file (both Markdown and HTML)
+    /// Save consensus result (both Markdown and HTML)
     /// </summary>
     public async Task SaveConsensusAsync(ConsensusResult result)
     {
-        // Save Markdown output
-        await _markdownOutputService.SaveConsensusResultAsync(result, _config.ConsensusFile);
+        // Save Markdown output - id is handled by the output services/writer
+        await _markdownOutputService.SaveConsensusResultAsync(result);
         
-        // Save HTML output with custom ID or timestamp
-        var filenameIdentifier = _config.OutputFilenamesId ?? DateTime.Now.ToString("yyyyMMdd-HHmmss");
-        var htmlFileName = $"output-{filenameIdentifier}.html";
-        var htmlFilePath = Path.Combine(_config.OutputDirectory, "output", "responses", htmlFileName);
-        await _htmlOutputService.SaveConsensusResultAsync(result, htmlFilePath);
-        
-        _logger.LogInformation("✓ HTML output saved to: {0}", htmlFilePath);
+        // Save HTML output - id is handled by the output services/writer
+        await _htmlOutputService.SaveConsensusResultAsync(result);
     }
 }

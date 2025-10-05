@@ -8,7 +8,9 @@ namespace Consensus.Services;
 public interface IMarkdownOutputService
 {
     /// <summary>
-    /// Save the consensus result to a file in Markdown format
+    /// Save the consensus result in Markdown format
     /// </summary>
-    Task SaveConsensusResultAsync(ConsensusResult result, string filePath);
+    /// <param name="result">The consensus result to save</param>
+    /// <param name="id">Optional identifier for the output file</param>
+    Task SaveConsensusResultAsync(ConsensusResult result, string? id = null);
 }
