@@ -75,27 +75,7 @@ public class ConsensusController : ControllerBase
         }
 
         // Return stubbed HTML data
-        var html = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Consensus Report - {runId}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; }}
-        h1 {{ color: #333; }}
-        .consensus {{ background-color: #f0f0f0; padding: 20px; border-radius: 5px; }}
-    </style>
-</head>
-<body>
-    <h1>Consensus Report</h1>
-    <p><strong>Run ID:</strong> {runId}</p>
-    <div class='consensus'>
-        <h2>Consensus Result</h2>
-        <p>This is a stubbed HTML response for run {runId}.</p>
-        <p>The actual consensus data will be displayed here.</p>
-    </div>
-</body>
-</html>";
+        var html = System.IO.File.ReadAllText("output-TEST2.html");
 
         return Content(html, "text/html");
     }

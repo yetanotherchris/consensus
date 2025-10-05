@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
 import { LazyLog } from 'react-lazylog';
 import type { LogEntryModel } from '../types/api';
 
@@ -16,6 +16,7 @@ const PAPER_STYLES = {
   bgcolor: COLORS.background,
   borderRadius: 2,
   width: '100%',
+  maxWidth: '100%',
 } as const;
 
 interface LogViewerProps {
@@ -41,7 +42,16 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs }) => {
       <Typography variant="h6" sx={{ mb: 2, color: COLORS.text }}>
         Logs
       </Typography>
-      <div style={{ height: '400px', backgroundColor: COLORS.background }}>
+      <Box sx={{ 
+        height: '400px', 
+        width: '100%', 
+        backgroundColor: COLORS.background,
+        overflow: 'hidden',
+        '& > div': {
+          minWidth: 'unset !important',
+          width: '100%',
+        }
+      }}>
         <LazyLog
           text={logText}
           enableSearch={false}
@@ -53,9 +63,10 @@ export const LogViewer: React.FC<LogViewerProps> = ({ logs }) => {
             color: COLORS.text,
             fontSize: '13px',
             lineHeight: '1.4',
+            minWidth: 'unset',
           }}
         />
-      </div>
+      </Box>
     </Paper>
   );
 };

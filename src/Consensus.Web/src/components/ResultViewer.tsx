@@ -2,23 +2,26 @@ import React, { useState } from 'react';
 import {
   Box,
   Paper,
-  Typography,
   Button,
   Collapse,
+  Grid,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import type { LogEntryModel } from '../types/api';
 import { LogViewer } from './LogViewer';
+import { Header } from './Header';
 
 interface ResultViewerProps {
   html: string;
   logs: LogEntryModel[];
   runId: string;
+  onReset: () => void;
 }
 
-export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId }) => {
+export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId, onReset }) => {
   const [showLogs, setShowLogs] = useState(false);
 
   const handleDownload = () => {
@@ -34,16 +37,23 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId })
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" sx={{ fontWeight: 500 }}>
-          Result
-        </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
+      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+        <Header noMargin />
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={onReset}
+            startIcon={<ArrowForwardIcon />}
+            sx={{ textTransform: 'none' }}
+          >
+            New Prompt
+          </Button>
           <Button
             variant="outlined"
             startIcon={showLogs ? <VisibilityOffIcon /> : <VisibilityIcon />}
             onClick={() => setShowLogs(!showLogs)}
+            sx={{ textTransform: 'none' }}
           >
             {showLogs ? 'Hide Logs' : 'View Logs'}
           </Button>
@@ -51,6 +61,7 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId })
             variant="contained"
             startIcon={<DownloadIcon />}
             onClick={handleDownload}
+            sx={{ textTransform: 'none' }}
           >
             Download HTML
           </Button>
@@ -65,7 +76,7 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId })
         elevation={2}
         sx={{
           p: 0,
-          height: '600px',
+          flex: 1,
           borderRadius: 2,
           overflow: 'hidden',
         }}

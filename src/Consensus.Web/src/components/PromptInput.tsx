@@ -5,16 +5,28 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
   disabled?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-export const PromptInput: React.FC<PromptInputProps> = ({ onSubmit, disabled = false }) => {
-  const [prompt, setPrompt] = useState('');
+export const PromptInput: React.FC<PromptInputProps> = ({ 
+  onSubmit, 
+  disabled = false,
+  value: externalValue,
+  onChange: externalOnChange
+}) => {
+  const [internalPrompt, setInternalPrompt] = useState('');
+  
+  const prompt = externalValue !== undefined ? externalValue : internalPrompt;
+  const setPrompt = externalOnChange !== undefined ? externalOnChange : setInternalPrompt;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !disabled) {
       onSubmit(prompt);
-      setPrompt('');
+      if (externalValue === undefined) {
+        setPrompt('');
+      }
     }
   };
 
