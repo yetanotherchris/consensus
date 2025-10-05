@@ -4,7 +4,6 @@ import {
   Paper,
   Button,
   Collapse,
-  Grid,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -39,7 +38,9 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({ html, logs, runId, o
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', alignItems: 'center' }}>
-        <Header noMargin />
+        <Box>
+          <Header noMargin />
+        </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
