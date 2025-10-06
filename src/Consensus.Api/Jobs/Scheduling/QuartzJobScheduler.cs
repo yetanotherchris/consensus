@@ -19,7 +19,7 @@ public class QuartzJobScheduler : IJobScheduler
         _logger = logger;
     }
 
-    public async Task<bool> ScheduleConsensusJobAsync(string runId, int delaySeconds = 5)
+    public async Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, int delaySeconds = 5)
     {
         var scheduler = await _schedulerFactory.GetScheduler();
         var jobKey = new JobKey($"consensus-{runId}", "consensus-jobs");
@@ -35,6 +35,7 @@ public class QuartzJobScheduler : IJobScheduler
         var jobDataMap = new JobDataMap
         {
             { "runId", runId },
+            { "prompt", prompt },
             { "createdAt", createdAt }
         };
         

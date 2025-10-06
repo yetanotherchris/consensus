@@ -1,3 +1,4 @@
+using Consensus;
 using Quartz;
 
 namespace Consensus.Api.Jobs;
@@ -8,19 +9,41 @@ namespace Consensus.Api.Jobs;
 public class ConsensusJob : IJob
 {
     private readonly ILogger<ConsensusJob> _logger;
+    private readonly ConsensusOrchestrator _orchestrator;
 
-    public ConsensusJob(ILogger<ConsensusJob> logger)
+    // Hardcoded models from models.txt
+    private static readonly string[] Models = new[]
+    {
+        "anthropic/claude-sonnet-4",
+        "x-ai/grok-3",
+        "qwen/qwen3-vl-235b-a22b-thinking",
+        "alibaba/tongyi-deepresearch-30b-a3b",
+        "google/gemini-2.5-pro",
+        "openai/gpt-5"
+    };
+
+    public ConsensusJob(
+        ILogger<ConsensusJob> logger,
+        ConsensusOrchestrator orchestrator)
     {
         _logger = logger;
+        _orchestrator = orchestrator;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
         var runId = context.JobDetail.JobDataMap.GetString("runId");
+        var prompt = context.JobDetail.JobDataMap.GetString("prompt");
         
         if (string.IsNullOrEmpty(runId))
         {
             _logger.LogError("ConsensusJob executed without a runId");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(prompt))
+        {
+            _logger.LogError("ConsensusJob executed without a prompt for runId: {RunId}", runId);
             return;
         }
 
@@ -31,22 +54,22 @@ public class ConsensusJob : IJob
 
         try
         {
-            // TODO: Execute actual consensus building process
-            // This is where you would:
-            // 1. Call ConsensusOrchestrator
-            // 2. Pass the prompt/request
-            // 3. Get the consensus result
-            // 4. Save the output (markdown, HTML, logs)
+            // Execute consensus building process
+            _logger.LogInformation("Building consensus for runId: {RunId} with {ModelCount} models", runId, Models.Length);
             
-            // For now, just simulate work with a delay
-            await Task.Delay(100);
+            var result = await _orchestrator.GetConsensusAsync(prompt, Models);
             
-            _logger.LogInformation("ConsensusJob completed for runId: {RunId}", runId);
+            // Save the output (markdown, HTML, logs) with runId as filename identifier
+            _logger.LogInformation("Saving consensus results for runId: {RunId}", runId);
+            await _orchestrator.SaveConsensusAsync(result, runId);
+            
+            _logger.LogInformation("ConsensusJob completed successfully for runId: {RunId}, Consensus Level: {ConsensusLevel}", 
+                runId, result.ConsensusLevel);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "ConsensusJob failed for runId: {RunId}", runId);
-            throw;
+            // Don't rethrow - mark as finished even on error
         }
         finally
         {

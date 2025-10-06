@@ -101,7 +101,7 @@ public class ConsensusController : ControllerBase
         _logger.LogInformation("Starting job for runId: {RunId} with prompt: {Prompt}", runId, request.Prompt);
 
         // Schedule the job with Quartz
-        var scheduled = await _jobScheduler.ScheduleConsensusJobAsync(runId);
+        var scheduled = await _jobScheduler.ScheduleConsensusJobAsync(runId, request.Prompt);
         
         if (!scheduled)
         {

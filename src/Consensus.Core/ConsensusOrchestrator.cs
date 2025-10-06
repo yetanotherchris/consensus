@@ -156,12 +156,14 @@ public class ConsensusOrchestrator
     /// <summary>
     /// Save consensus result (both Markdown and HTML)
     /// </summary>
-    public async Task SaveConsensusAsync(ConsensusResult result)
+    /// <param name="result">The consensus result to save</param>
+    /// <param name="id">Optional identifier for the output filenames</param>
+    public async Task SaveConsensusAsync(ConsensusResult result, string? id = null)
     {
-        // Save Markdown output - id is handled by the output services/writer
-        await _markdownOutputService.SaveConsensusResultAsync(result);
+        // Save Markdown output with optional id
+        await _markdownOutputService.SaveConsensusResultAsync(result, id);
         
-        // Save HTML output - id is handled by the output services/writer
-        await _htmlOutputService.SaveConsensusResultAsync(result);
+        // Save HTML output with optional id
+        await _htmlOutputService.SaveConsensusResultAsync(result, id);
     }
 }
