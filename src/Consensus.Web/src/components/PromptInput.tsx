@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import { Box, IconButton, InputBase } from '@mui/material';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import { useState } from 'react';
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -9,12 +7,12 @@ interface PromptInputProps {
   onChange?: (value: string) => void;
 }
 
-export const PromptInput: React.FC<PromptInputProps> = ({ 
+export function PromptInput({ 
   onSubmit, 
   disabled = false,
   value: externalValue,
   onChange: externalOnChange
-}) => {
+}: PromptInputProps) {
   const [internalPrompt, setInternalPrompt] = useState('');
   
   const prompt = externalValue !== undefined ? externalValue : internalPrompt;
@@ -38,74 +36,35 @@ export const PromptInput: React.FC<PromptInputProps> = ({
   };
 
   return (
-    <Box
-      component="form"
+    <form
       onSubmit={handleSubmit}
-      sx={{
-        position: 'relative',
-        width: '100%',
-        maxWidth: '700px',
-        margin: '0 auto',
-      }}
+      className="relative w-full max-w-[700px] mx-auto"
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          backgroundColor: '#fff',
-          borderRadius: '24px',
-          border: '1px solid #e0e0e0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          padding: '12px 16px',
-          transition: 'box-shadow 0.2s, border-color 0.2s',
-          '&:focus-within': {
-            borderColor: '#10a37f',
-            boxShadow: '0 4px 12px rgba(16,163,127,0.15)',
-          },
-        }}
-      >
-        <InputBase
-          multiline
-          minRows={3}
-          maxRows={8}
+      <div className="flex items-end bg-white rounded-3xl border border-gray-300 shadow-md p-3 transition-all duration-200 focus-within:border-primary focus-within:shadow-lg focus-within:shadow-primary/15">
+        <textarea
+          rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Enter your prompt here..."
           disabled={disabled}
-          sx={{
-            flex: 1,
-            fontSize: '16px',
-            lineHeight: '1.5',
-            '& textarea': {
-              resize: 'none',
-            },
-          }}
+          className="flex-1 text-base leading-normal resize-none outline-none border-none bg-transparent disabled:opacity-50"
+          style={{ maxHeight: '200px' }}
         />
-        <IconButton
+        <button
           type="submit"
           disabled={!prompt.trim() || disabled}
-          sx={{
-            marginLeft: 1,
-            padding: '8px',
-            backgroundColor: prompt.trim() && !disabled ? '#10a37f' : '#e0e0e0',
-            color: '#fff',
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            '&:hover': {
-              backgroundColor: prompt.trim() && !disabled ? '#0d8a68' : '#e0e0e0',
-            },
-            '&.Mui-disabled': {
-              backgroundColor: '#e0e0e0',
-              color: '#999',
-            },
-            transition: 'background-color 0.2s',
-          }}
+          className={`ml-2 p-2 w-9 h-9 rounded-full transition-colors duration-200 ${
+            prompt.trim() && !disabled
+              ? 'bg-primary hover:bg-primary-hover text-white'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
         >
-          <ArrowUpwardIcon sx={{ fontSize: '20px' }} />
-        </IconButton>
-      </Box>
-    </Box>
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 14l5-5 5 5z" />
+          </svg>
+        </button>
+      </div>
+    </form>
   );
-};
+}

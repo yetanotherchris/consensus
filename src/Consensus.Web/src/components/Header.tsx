@@ -1,25 +1,16 @@
-import { Box, Typography } from '@mui/material';
-
 interface HeaderProps {
   align?: 'left' | 'center';
   noMargin?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ align = 'left', noMargin = false }) => {
+export function Header({ align = 'left', noMargin = false }: HeaderProps) {
   return (
-    <Box sx={{ mb: noMargin ? 0 : 3, textAlign: align }}>
-      <Typography 
-        variant="h3" 
-        component="h1" 
-        sx={{ 
-          fontWeight: 200, 
-          fontFamily: '"Inter", "Segoe UI", "Roboto", sans-serif',
-          margin: noMargin ? 0 : undefined,
-          lineHeight: noMargin ? 1 : undefined,
-        }}
+    <div className={`${noMargin ? '' : 'mb-12'} text-${align}`}>
+      <h1 
+        className={`text-3xl font-extralight font-sans ${noMargin ? 'm-0 leading-none' : ''}`}
       >
         consensus
-      </Typography>
-    </Box>
+      </h1>
+    </div>
   );
-};
+}

@@ -1,34 +1,10 @@
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
 import { PromptInput } from './components/PromptInput';
 import { LogViewer } from './components/LogViewer';
 import { ResultViewer } from './components/ResultViewer';
 import { Header } from './components/Header';
 import { consensusApi } from './services/api';
 import type { JobStatusModel, LogEntryModel } from './types/api';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#10a37f',
-    },
-    background: {
-      default: '#f7f7f8',
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Segoe UI", "Roboto", sans-serif',
-  },
-});
 
 function App() {
   const [jobStatus, setJobStatus] = useState<JobStatusModel | null>(null);
@@ -115,120 +91,83 @@ function App() {
   const isJobFinished = !!(jobStatus && jobStatus.status === 2); // Finished
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box
-        sx={{
-          minHeight: '100vh',
-          height: isJobFinished ? '100vh' : 'auto',
-          display: 'flex',
-          alignItems: isJobFinished ? 'flex-start' : 'center',
-          justifyContent: 'center',
-          px: 3,
-          py: isJobFinished ? 3 : 0,
-        }}
-      >
-        <Box sx={{ 
-          width: '100%', 
-          maxWidth: '1040px', 
-          mx: 'auto',
-          height: isJobFinished ? '100%' : 'auto',
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 3,
-            height: isJobFinished ? '100%' : 'auto',
-          }}>
-            {/* Header - Show only on processing page */}
-            {isJobRunning && <Header align="left" />}
+    <div className={`min-h-screen ${isJobFinished ? 'h-screen' : 'h-auto'} flex ${isJobFinished ? 'items-start' : 'items-center'} justify-center px-6 ${isJobFinished ? 'py-6' : 'py-0'} bg-[#f7f7f8]`}>
+      <div className={`w-full max-w-[1040px] mx-auto ${isJobFinished ? 'h-full' : 'h-auto'}`}>
+        <div className={`flex flex-col gap-6 ${isJobFinished ? 'h-full' : 'h-auto'}`}>
+          {/* Header - Show only on processing page */}
+          {isJobRunning && <Header align="left" />}
 
-            {/* Header with subtitle - Only show when not finished and not running */}
-            {!isJobFinished && !isJobRunning && (
-              <Box sx={{ textAlign: 'center', mb: 2 }}>
-                <Typography 
-                  variant="h3" 
-                  component="h1" 
-                  sx={{ 
-                    fontWeight: 200, 
-                    fontFamily: '"Inter", "Segoe UI", "Roboto", sans-serif',
-                    mb: 1 
-                  }}
-                >
-                  consensus
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Submit a prompt to generate consensus from multiple AI agents
-                </Typography>
-              </Box>
-            )}
+          {/* Header with subtitle - Only show when not finished and not running */}
+          {!isJobFinished && !isJobRunning && (
+            <div className="text-center mb-4">
+              <h1 className="text-3xl font-extralight font-sans mb-2">
+                consensus
+              </h1>
+              <p className="text-base text-gray-600">
+                Submit a prompt to generate consensus from multiple AI agents
+              </p>
+            </div>
+          )}
 
-            {/* Error Alert */}
-            {error && (
-              <Alert severity="error" onClose={() => setError('')}>
-                {error}
-              </Alert>
-            )}
-
-            {/* Prompt Input - Show when not finished and not running */}
-            {!isJobFinished && !isJobRunning && (
-              <PromptInput
-                onSubmit={handleSubmitPrompt}
-                disabled={isSubmitting || isJobRunning}
-                value={currentPrompt}
-                onChange={setCurrentPrompt}
-              />
-            )}
-
-            {/* Show prompt as blockquote when running */}
-            {isJobRunning && currentPrompt && (
-              <Box 
-                sx={{ 
-                  borderLeft: '4px solid #e0e0e0',
-                  paddingLeft: 2,
-                  fontStyle: 'italic',
-                  color: 'text.secondary',
-                  backgroundColor: '#f9f9f9',
-                  padding: 2,
-                  borderRadius: 1,
-                  mb: 2,
-                  textAlign: 'left'
-                }}
+          {/* Error Alert */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+              <span className="text-red-800">{error}</span>
+              <button 
+                onClick={() => setError('')}
+                className="text-red-600 hover:text-red-800 font-bold"
               >
-                <Typography variant="body1" sx={{ fontSize: '1.125rem' }}>
-                  "{currentPrompt}"
-                </Typography>
-              </Box>
-            )}
+                ×
+              </button>
+            </div>
+          )}
 
-            {/* Loading State */}
-            {isSubmitting && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            )}
+          {/* Prompt Input - Show when not finished and not running */}
+          {!isJobFinished && !isJobRunning && (
+            <PromptInput
+              onSubmit={handleSubmitPrompt}
+              disabled={isSubmitting || isJobRunning}
+              value={currentPrompt}
+              onChange={setCurrentPrompt}
+            />
+          )}
 
-            {/* Job Running - Show Logs */}
-            {isJobRunning && (
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Typography variant="h6">
-                    Processing...
-                  </Typography>
-                  <CircularProgress size={24} />
-                </Box>
-                <LogViewer logs={logs} />
-              </Box>
-            )}
+          {/* Show prompt as blockquote when running */}
+          {isJobRunning && currentPrompt && (
+            <div className="border-l-4 border-gray-300 pl-4 italic text-gray-600 bg-gray-50 p-4 rounded mb-4 text-left">
+              <p className="text-lg">
+                "{currentPrompt}"
+              </p>
+            </div>
+          )}
 
-            {/* Job Finished - Show Result */}
-            {isJobFinished && html && (
-              <ResultViewer html={html} logs={logs} runId={jobStatus.runId} onReset={handleReset} />
-            )}
-          </Box>
-        </Box>
-      </Box>
-    </ThemeProvider>
+          {/* Loading State */}
+          {isSubmitting && (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          )}
+
+          {/* Job Running - Show Logs */}
+          {isJobRunning && (
+            <div>
+              <div className="flex items-center gap-4 mb-4">
+                <h2 className="text-xl font-semibold">
+                  Processing...
+                </h2>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+              <LogViewer logs={logs} />
+            </div>
+          )}
+
+          {/* Job Finished - Show Result */}
+          {isJobFinished && html && (
+            <ResultViewer html={html} logs={logs} runId={jobStatus.runId} onReset={handleReset} />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
