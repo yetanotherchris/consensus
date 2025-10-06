@@ -1,7 +1,0 @@
-Please use academic citations and references, and start researching without prompting me.
-
-Find research on how Autism Spectrum Disorder criteria is separated from personality traits and trauma/high ACE scores in diagnosis.
-
-In your response, can you link all citations using the DOI to this url path:
-- "../academic-search/?type=doi&q=the-doi" (so links use the same web server). Add the DOI as part of this link.
-- Example link: [DOI NUMBER HERE](../academic-search/?type=doi&q=DOI NUMBER HERE)

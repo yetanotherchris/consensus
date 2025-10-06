@@ -7,7 +7,7 @@ param(
     [string]$OutputId = ""
 )
 
-#.\run-consensus.ps1 -PromptFile "$(pwd)\test-prompt-2.txt" -OutputId "TEST2"
+#.\run-consensus.ps1 -PromptFile "$(pwd)\test-prompt.txt" -OutputId "TEST2"
 # Check if environment variables are set
 if (-not $env:CONSENSUS_API_ENDPOINT) {
     Write-Host "Error: CONSENSUS_API_ENDPOINT environment variable not set" -ForegroundColor Red
@@ -47,6 +47,4 @@ if ($OutputId) {
 }
 
 # Run the application
-pushd src\Consensus.Console
-dotnet run --project Consensus.Console.csproj -- $Args
-popd
+dotnet run -- $Args
