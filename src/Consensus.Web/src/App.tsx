@@ -104,7 +104,7 @@ function App() {
                 consensus
               </h1>
               <p className="text-base text-gray-600">
-                Submit a prompt to generate consensus from multiple AI agents
+                Generate a consensus from multiple AI agents
               </p>
             </div>
           )}
@@ -115,7 +115,7 @@ function App() {
               <span className="text-red-800">{error}</span>
               <button 
                 onClick={() => setError('')}
-                className="text-red-600 hover:text-red-800 font-bold"
+                className="text-red-600 hover:text-red-800 font-bold cursor-pointer font-sans"
               >
                 ×
               </button>

@@ -29,7 +29,8 @@ export function PromptInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Only Ctrl+Enter submits the form, Enter creates newlines
+    if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -54,14 +55,14 @@ export function PromptInput({
         <button
           type="submit"
           disabled={!prompt.trim() || disabled}
-          className={`ml-2 p-2 w-9 h-9 rounded-full transition-colors duration-200 ${
+          className={`ml-2 p-2 w-9 h-9 rounded-full transition-colors duration-200 font-sans ${
             prompt.trim() && !disabled
-              ? 'bg-primary hover:bg-primary-hover text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? '!bg-blue-600 hover:!bg-blue-700 !text-white cursor-pointer'
+              : '!bg-gray-300 !text-gray-500 cursor-not-allowed pointer-events-none'
           }`}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M7 14l5-5 5 5z" />
+            <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
           </svg>
         </button>
       </div>

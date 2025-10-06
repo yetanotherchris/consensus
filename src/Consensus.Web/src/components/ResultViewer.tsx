@@ -34,7 +34,7 @@ export function ResultViewer({ html, logs, runId, onReset }: ResultViewerProps) 
         <div className="flex gap-2">
           <button
             onClick={onReset}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-2 cursor-pointer font-sans"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
@@ -43,7 +43,7 @@ export function ResultViewer({ html, logs, runId, onReset }: ResultViewerProps) 
           </button>
           <button
             onClick={() => setShowLogs(!showLogs)}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-2"
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors flex items-center gap-2 cursor-pointer font-sans"
           >
             {showLogs ? (
               <>
@@ -63,7 +63,7 @@ export function ResultViewer({ html, logs, runId, onReset }: ResultViewerProps) 
           </button>
           <button
             onClick={handleDownload}
-            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover transition-colors flex items-center gap-2"
+            className="px-4 py-2 !bg-blue-600 hover:!bg-blue-700 !text-white rounded transition-colors flex items-center gap-2 cursor-pointer font-sans"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z" />
