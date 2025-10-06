@@ -38,5 +38,6 @@ public enum JobStatus
 {
     NotStarted,
     Running,
-    Finished
+    Finished,
+    Timeout
 }

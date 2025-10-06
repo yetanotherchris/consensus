@@ -1,4 +1,5 @@
 using Consensus.Api.Models;
+using Microsoft.Extensions.Configuration;
 using Quartz;
 
 namespace Consensus.Api.Jobs.Scheduling;
@@ -10,13 +11,21 @@ public class QuartzJobScheduler : IJobScheduler
 {
     private readonly ISchedulerFactory _schedulerFactory;
     private readonly ILogger<QuartzJobScheduler> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly int _agentTimeoutSeconds;
 
     public QuartzJobScheduler(
         ISchedulerFactory schedulerFactory,
-        ILogger<QuartzJobScheduler> logger)
+        ILogger<QuartzJobScheduler> logger,
+        IConfiguration configuration)
     {
         _schedulerFactory = schedulerFactory;
         _logger = logger;
+        _configuration = configuration;
+        
+        // Get timeout configuration, default to 120 seconds
+        var timeoutValue = _configuration["Consensus:AgentTimeoutSeconds"];
+        _agentTimeoutSeconds = string.IsNullOrEmpty(timeoutValue) ? 120 : int.Parse(timeoutValue);
     }
 
     public async Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, int delaySeconds = 5)
@@ -84,6 +93,17 @@ public class QuartzJobScheduler : IJobScheduler
         DateTime? startedAt = null;
         DateTime? finishedAt = null;
         
+        // Get execution times from job data map
+        if (jobDetail.JobDataMap.ContainsKey("startedAt"))
+        {
+            startedAt = jobDetail.JobDataMap.GetDateTime("startedAt");
+        }
+        
+        if (jobDetail.JobDataMap.ContainsKey("finishedAt"))
+        {
+            finishedAt = jobDetail.JobDataMap.GetDateTime("finishedAt");
+        }
+        
         if (trigger != null)
         {
             var triggerState = await scheduler.GetTriggerState(trigger.Key);
@@ -98,31 +118,27 @@ public class QuartzJobScheduler : IJobScheduler
                 TriggerState.None => JobStatus.Finished,
                 _ => JobStatus.NotStarted
             };
-
-            // Get execution times from job data map if stored
-            if (jobDetail.JobDataMap.ContainsKey("startedAt"))
-            {
-                startedAt = jobDetail.JobDataMap.GetDateTime("startedAt");
-            }
-            
-            if (jobDetail.JobDataMap.ContainsKey("finishedAt"))
-            {
-                finishedAt = jobDetail.JobDataMap.GetDateTime("finishedAt");
-            }
         }
         else
         {
             // No trigger means job has completed and trigger was removed
             status = JobStatus.Finished;
-            
-            if (jobDetail.JobDataMap.ContainsKey("startedAt"))
+        }
+        
+        // Check for timeout: job started but hasn't finished and exceeded expected duration
+        // Expected duration is: number of models * agent timeout * 2 (for synthesis)
+        // Using 6 models as per ConsensusJob hardcoded models
+        const int modelCount = 6;
+        var expectedMaxDuration = TimeSpan.FromSeconds(modelCount * _agentTimeoutSeconds + (_agentTimeoutSeconds * 2));
+        
+        if (startedAt.HasValue && !finishedAt.HasValue)
+        {
+            var runningDuration = DateTime.UtcNow - startedAt.Value;
+            if (runningDuration > expectedMaxDuration)
             {
-                startedAt = jobDetail.JobDataMap.GetDateTime("startedAt");
-            }
-            
-            if (jobDetail.JobDataMap.ContainsKey("finishedAt"))
-            {
-                finishedAt = jobDetail.JobDataMap.GetDateTime("finishedAt");
+                _logger.LogWarning("Job {RunId} has timed out. Running for {Duration}, expected max {ExpectedMax}", 
+                    runId, runningDuration, expectedMaxDuration);
+                status = JobStatus.Timeout;
             }
         }
 

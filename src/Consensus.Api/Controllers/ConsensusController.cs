@@ -1,5 +1,6 @@
 using Consensus.Api.Jobs.Scheduling;
 using Consensus.Api.Models;
+using Consensus.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consensus.Api.Controllers;
@@ -12,13 +13,16 @@ namespace Consensus.Api.Controllers;
 public class ConsensusController : ControllerBase
 {
     private readonly IJobScheduler _jobScheduler;
+    private readonly IOutputFileService _outputFileService;
     private readonly ILogger<ConsensusController> _logger;
 
     public ConsensusController(
         IJobScheduler jobScheduler,
+        IOutputFileService outputFileService,
         ILogger<ConsensusController> logger)
     {
         _jobScheduler = jobScheduler;
+        _outputFileService = outputFileService;
         _logger = logger;
     }
 
@@ -74,8 +78,12 @@ public class ConsensusController : ControllerBase
             return NotFound(new { message = $"Run ID '{runId}' not found" });
         }
 
-        // Return stubbed HTML data
-        var html = System.IO.File.ReadAllText("output-TEST2.html");
+        // Read HTML output file
+        var html = await _outputFileService.ReadHtmlAsync(runId);
+        if (html == null)
+        {
+            return NotFound(new { message = $"HTML output not found for run ID '{runId}'. The job may still be running or may have failed." });
+        }
 
         return Content(html, "text/html");
     }
@@ -132,41 +140,12 @@ public class ConsensusController : ControllerBase
             return NotFound(new { message = $"Run ID '{runId}' not found" });
         }
 
-        // Return stubbed markdown data
-        var markdown = $@"# Consensus Report
-
-**Run ID:** {runId}
-
-## Summary
-
-This is a stubbed markdown response for run `{runId}`.
-
-## Agent Responses
-
-### Agent 1
-Response from agent 1 would appear here.
-
-### Agent 2
-Response from agent 2 would appear here.
-
-### Agent 3
-Response from agent 3 would appear here.
-
-## Consensus
-
-The synthesized consensus would appear here.
-
-## Points of Agreement
-
-- Point 1
-- Point 2
-- Point 3
-
-## Points of Disagreement
-
-- Disagreement 1
-- Disagreement 2
-";
+        // Read markdown output file
+        var markdown = await _outputFileService.ReadMarkdownAsync(runId);
+        if (markdown == null)
+        {
+            return NotFound(new { message = $"Markdown output not found for run ID '{runId}'. The job may still be running or may have failed." });
+        }
 
         return Content(markdown, "text/markdown");
     }
