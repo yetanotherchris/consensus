@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface PromptInputProps {
   onSubmit: (prompt: string) => void;
@@ -14,9 +14,20 @@ export function PromptInput({
   onChange: externalOnChange
 }: PromptInputProps) {
   const [internalPrompt, setInternalPrompt] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const prompt = externalValue !== undefined ? externalValue : internalPrompt;
   const setPrompt = externalOnChange !== undefined ? externalOnChange : setInternalPrompt;
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 500); // 500px max height for textarea expansion
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [prompt]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,18 +50,19 @@ export function PromptInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative w-full max-w-[700px] mx-auto"
+      className="relative w-full max-w-[700px] mx-auto my-8"
     >
       <div className="flex items-end bg-white rounded-3xl border border-gray-300 shadow-md p-3 transition-all duration-200 focus-within:border-primary focus-within:shadow-lg focus-within:shadow-primary/15">
         <textarea
+          ref={textareaRef}
           rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Enter your prompt here..."
           disabled={disabled}
-          className="flex-1 text-base leading-normal resize-none outline-none border-none bg-transparent disabled:opacity-50"
-          style={{ maxHeight: '200px' }}
+          className="flex-1 text-base leading-normal resize-none outline-none border-none bg-transparent disabled:opacity-50 m-[5px]"
+          style={{ minHeight: '60px', maxHeight: '500px', overflow: 'auto' }}
         />
         <button
           type="submit"
