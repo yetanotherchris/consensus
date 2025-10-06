@@ -55,6 +55,6 @@ public class FileLogReader : ILogReader
 
     private string GetLogFilePath(string runId)
     {
-        return Path.Combine(_outputDirectory, "output", "logs", $"conversation-log-{runId}.txt");
+        return Path.Combine(_outputDirectory, "logs", $"consensus-{runId}.log");
     }
 }

@@ -29,7 +29,7 @@ public class FileOutputWriter : IOutputWriter
     {
         var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"output-{filenameIdentifier}.html";
-        var filePath = Path.Combine(_outputDirectory, "output", "responses", fileName);
+        var filePath = Path.Combine(_outputDirectory, "responses", fileName);
         
         _logger.LogInformation("Writing HTML output to file: {FilePath}", filePath);
         
@@ -49,7 +49,7 @@ public class FileOutputWriter : IOutputWriter
     {
         var filenameIdentifier = id ?? _filenameIdentifier;
         var fileName = $"consensus-{filenameIdentifier}.md";
-        var filePath = Path.Combine(_outputDirectory, "output", "responses", fileName);
+        var filePath = Path.Combine(_outputDirectory, "responses", fileName);
         
         _logger.LogInformation("Writing Markdown output to file: {FilePath}", filePath);
         

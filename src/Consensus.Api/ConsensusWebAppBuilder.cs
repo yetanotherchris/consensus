@@ -83,8 +83,8 @@ public class ConsensusWebAppBuilder
                 .AddFileOutputWriter(outputDirectory);
 
         services.AddSingleton<IJobScheduler, QuartzJobScheduler>();
-        services.AddSingleton<Api.Services.IOutputFileService>(sp => 
-            new Api.Services.OutputFileService(outputDirectory, sp.GetRequiredService<ILogger<Api.Services.OutputFileService>>()));
+        services.AddSingleton<Api.Services.IOutputFileReaderService>(sp => 
+            new Api.Services.OutputFileReaderService(outputDirectory, sp.GetRequiredService<ILogger<Api.Services.OutputFileReaderService>>()));
         services.AddSingleton<Api.Services.ILogReader>(sp => 
             new Api.Services.FileLogReader(outputDirectory, sp.GetRequiredService<ILogger<Api.Services.FileLogReader>>()));
         RegisterQuartzServices(services);

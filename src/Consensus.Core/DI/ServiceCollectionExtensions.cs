@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
         // Build log file path
         var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         var filenameIdentifier = outputFilenamesId ?? timestamp;
-        var logFilePath = Path.Combine(outputDirectory, "output", "logs", $"conversation-log-{filenameIdentifier}.txt");
+        var logFilePath = Path.Combine(outputDirectory, "logs", $"conversation-log-{filenameIdentifier}.txt");
         
         // Register logger as singleton (shared log file)
         services.AddSingleton(new SimpleFileLogger(logFilePath));

@@ -13,13 +13,13 @@ namespace Consensus.Api.Controllers;
 public class ConsensusController : ControllerBase
 {
     private readonly IJobScheduler _jobScheduler;
-    private readonly IOutputFileService _outputFileService;
+    private readonly IOutputFileReaderService _outputFileService;
     private readonly ILogReader _logReader;
     private readonly ILogger<ConsensusController> _logger;
 
     public ConsensusController(
         IJobScheduler jobScheduler,
-        IOutputFileService outputFileService,
+        IOutputFileReaderService outputFileService,
         ILogReader logReader,
         ILogger<ConsensusController> logger)
     {

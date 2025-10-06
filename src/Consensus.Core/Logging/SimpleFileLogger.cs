@@ -58,6 +58,8 @@ public class SimpleFileLogger
             Console.WriteLine(logEntry);
         }
     }
+    
+    static string _logPath = Path.Combine(Directory.GetCurrentDirectory(), "output", "logs");
 
     /// <summary>
     /// Static method for writing log entries to run-specific log files.
@@ -69,14 +71,14 @@ public class SimpleFileLogger
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var logEntry = $"[INFO][{timestamp}] {message}";
-        
-        var logFilePath = Path.Combine("output", "logs", $"consensus-{runId}.log");
-        
+
+
+        var logFilePath = Path.Combine(_logPath, $"consensus-{runId}.log");
+
         // Ensure directory exists
-        var directory = Path.GetDirectoryName(logFilePath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        if (!Directory.Exists(_logPath))
         {
-            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(_logPath);
         }
 
         // Use file-specific lock to allow concurrent writes to different files
