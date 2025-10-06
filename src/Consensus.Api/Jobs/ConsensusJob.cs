@@ -57,7 +57,7 @@ public class ConsensusJob : IJob
             // Execute consensus building process
             _logger.LogInformation("Building consensus for runId: {RunId} with {ModelCount} models", runId, Models.Length);
             
-            var result = await _orchestrator.GetConsensusAsync(prompt, Models);
+            var result = await _orchestrator.GetConsensusAsync(prompt, Models, runId);
             
             // Save the output (markdown, HTML, logs) with runId as filename identifier
             _logger.LogInformation("Saving consensus results for runId: {RunId}", runId);

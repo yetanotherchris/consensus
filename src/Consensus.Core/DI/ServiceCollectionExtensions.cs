@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Consensus.Configuration;
 using Consensus.Services;
 using Consensus.Logging;
+using Consensus.Channels;
 
 namespace Consensus.DI;
 
@@ -27,6 +28,9 @@ public static class ServiceCollectionExtensions
             builder.AddConsole();
             builder.SetMinimumLevel(LogLevel.Information);
         });
+
+        // Register channel-based run tracker as singleton
+        services.AddSingleton<ConsensusRunTracker>();
 
         // Register services as transient (new instance per resolution)
         services.AddTransient<IAgentService, AgentService>();

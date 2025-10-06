@@ -1,7 +1,8 @@
 using System.Text.RegularExpressions;
+using Consensus.Channels;
 using Consensus.Configuration;
-using Consensus.Logging;
 using Consensus.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Consensus.Services;
 
@@ -13,17 +14,20 @@ public class SynthesizerService : ISynthesizerService
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ConsensusConfiguration _config;
-    private readonly SimpleFileLogger _logger;
+    private readonly ConsensusRunTracker _runTracker;
+    private readonly ILogger<SynthesizerService> _logger;
 
     public SynthesizerService(
         IAgentService agentService,
         IPromptBuilder promptBuilder,
         ConsensusConfiguration config,
-        SimpleFileLogger logger)
+        ConsensusRunTracker runTracker,
+        ILogger<SynthesizerService> logger)
     {
         _agentService = agentService;
         _promptBuilder = promptBuilder;
         _config = config;
+        _runTracker = runTracker;
         _logger = logger;
     }
 
@@ -31,32 +35,42 @@ public class SynthesizerService : ISynthesizerService
         string originalPrompt, 
         List<ModelResponse> responses, 
         string judgeModel,
+        string runId,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Starting synthesis of {0} responses...", responses.Count);
+        _runTracker.WriteLog(runId, $"Starting synthesis of {responses.Count} responses...");
 
-        // Build the judge prompt
-        string judgePrompt = _promptBuilder.BuildJudgeSynthesisPrompt(originalPrompt, responses);
+        try
+        {
+            // Build the judge prompt
+            string judgePrompt = _promptBuilder.BuildJudgeSynthesisPrompt(originalPrompt, responses);
 
-        // Query the judge model
-        _logger.LogInformation("Using {0} as synthesis judge...", judgeModel);
+            // Query the judge model
+            _runTracker.WriteLog(runId, $"Using {judgeModel} as synthesis judge...");
 
-        string synthesisResponse = await _agentService.QueryModelOneOffAsync(
-            judgeModel,
-            judgePrompt,
-            _config.ApiEndpoint,
-            _config.ApiKey,
-            cancellationToken);
+            string synthesisResponse = await _agentService.QueryModelOneOffAsync(
+                judgeModel,
+                judgePrompt,
+                _config.ApiEndpoint,
+                _config.ApiKey,
+                runId,
+                cancellationToken);
 
-        // Parse the synthesis response
-        var result = ParseSynthesisResponse(synthesisResponse, responses, originalPrompt);
-        
-        _logger.LogInformation("Synthesis complete. Consensus level: {0}", result.ConsensusLevel);
-        
-        return result;
+            // Parse the synthesis response
+            var result = ParseSynthesisResponse(synthesisResponse, responses, originalPrompt, runId);
+            
+            _runTracker.WriteLog(runId, $"Synthesis complete. Consensus level: {result.ConsensusLevel}");
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during synthesis for runId {RunId}", runId);
+            throw;
+        }
     }
 
-    private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt)
+    private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt, string runId)
     {
         // Extract summary from XML tags
         string summary = "No summary provided by model";
@@ -86,7 +100,7 @@ public class SynthesizerService : ISynthesizerService
         if (string.IsNullOrWhiteSpace(result.SynthesizedAnswer))
         {
             result.SynthesizedAnswer = synthesisResponse;
-            _logger.LogWarning("Could not parse structured synthesis response, using full response");
+            _runTracker.WriteLog(runId, "Could not parse structured synthesis response, using full response");
         }
 
         return result;

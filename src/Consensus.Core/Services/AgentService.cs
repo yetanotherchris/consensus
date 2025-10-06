@@ -1,9 +1,10 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using OpenAI;
 using System.ClientModel;
 using System.Text.RegularExpressions;
-using Consensus.Logging;
+using Consensus.Channels;
 using Consensus.Models;
 
 namespace Consensus.Services;
@@ -13,71 +14,96 @@ namespace Consensus.Services;
 /// </summary>
 public class AgentService : IAgentService
 {
-    private readonly SimpleFileLogger _logger;
+    private readonly ConsensusRunTracker _runTracker;
+    private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, (AIAgent agent, AgentThread thread)> _modelContexts = new();
 
-    public AgentService(SimpleFileLogger logger)
+    public AgentService(ConsensusRunTracker runTracker, ILogger<AgentService> logger)
     {
+        _runTracker = runTracker;
         _logger = logger;
     }
 
-    public async Task InitializeAgentsAsync(string[] models, string apiEndpoint, string apiKey)
+    public async Task InitializeAgentsAsync(string[] models, string apiEndpoint, string apiKey, string runId)
     {
-        _logger.LogInformation("Initializing {0} agent contexts", models.Length);
+        _runTracker.WriteLog(runId, $"Initializing {models.Length} agent contexts");
         
         foreach (string model in models)
         {
-            var openAIClient = new OpenAIClient(
-                new ApiKeyCredential(apiKey),
-                new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
-            );
-            var chatClient = openAIClient.GetChatClient(model);
-            AIAgent agent = chatClient.CreateAIAgent();
-            AgentThread thread = agent.GetNewThread();
-            
-            _modelContexts[model] = (agent, thread);
+            try
+            {
+                var openAIClient = new OpenAIClient(
+                    new ApiKeyCredential(apiKey),
+                    new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
+                );
+                var chatClient = openAIClient.GetChatClient(model);
+                AIAgent agent = chatClient.CreateAIAgent();
+                AgentThread thread = agent.GetNewThread();
+                
+                _modelContexts[model] = (agent, thread);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize agent for model {Model}", model);
+                throw;
+            }
         }
         
-        _logger.LogInformation("Successfully initialized {0} agent contexts", _modelContexts.Count);
+        _runTracker.WriteLog(runId, $"Successfully initialized {_modelContexts.Count} agent contexts");
         
         await Task.CompletedTask;
     }
 
-    public async Task<ModelResponse> QueryModelWithResponseAsync(string model, string prompt, CancellationToken cancellationToken = default)
+    public async Task<ModelResponse> QueryModelWithResponseAsync(string model, string prompt, string runId, CancellationToken cancellationToken = default)
     {
         if (!_modelContexts.TryGetValue(model, out var context))
         {
-            throw new InvalidOperationException($"Agent for model '{model}' not initialized. Call InitializeAgentsAsync first.");
+            var error = $"Agent for model '{model}' not initialized. Call InitializeAgentsAsync first.";
+            _logger.LogError(error);
+            throw new InvalidOperationException(error);
         }
 
         var (agent, thread) = context;
         var startTime = DateTime.UtcNow;
         
-        // Create a task for the agent query
-        var queryTask = Task.Run(async () =>
+        try
         {
-            var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
-            return response.Text ?? string.Empty;
-        }, cancellationToken);
-        
-        // Wait for either the query to complete or cancellation
-        var completedTask = await Task.WhenAny(
-            queryTask,
-            Task.Delay(Timeout.Infinite, cancellationToken)
-        );
-        
-        // If the delay task won (cancellation occurred), throw
-        if (completedTask != queryTask)
-        {
-            _logger.LogWarning("Query to {0} was cancelled by timeout", model);
-            throw new OperationCanceledException($"Query to {model} timed out");
+            // Create a task for the agent query
+            var queryTask = Task.Run(async () =>
+            {
+                var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+                return response.Text ?? string.Empty;
+            }, cancellationToken);
+            
+            // Wait for either the query to complete or cancellation
+            var completedTask = await Task.WhenAny(
+                queryTask,
+                Task.Delay(Timeout.Infinite, cancellationToken)
+            );
+            
+            // If the delay task won (cancellation occurred), throw
+            if (completedTask != queryTask)
+            {
+                _runTracker.WriteLog(runId, $"Query to {model} was cancelled by timeout");
+                throw new OperationCanceledException($"Query to {model} timed out");
+            }
+            
+            // Get the raw response
+            string rawResponse = await queryTask;
+            
+            // Parse into ModelResponse
+            return ParseModelResponse(model, rawResponse, startTime);
         }
-        
-        // Get the raw response
-        string rawResponse = await queryTask;
-        
-        // Parse into ModelResponse
-        return ParseModelResponse(model, rawResponse, startTime);
+        catch (OperationCanceledException)
+        {
+            // Already logged, just rethrow
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error querying model {Model}", model);
+            throw;
+        }
     }
 
     private ModelResponse ParseModelResponse(string modelName, string rawResponse, DateTime timestamp)
@@ -206,40 +232,54 @@ public class AgentService : IAgentService
         };
     }
 
-    public async Task<string> QueryModelOneOffAsync(string model, string prompt, string apiEndpoint, string apiKey, CancellationToken cancellationToken = default)
+    public async Task<string> QueryModelOneOffAsync(string model, string prompt, string apiEndpoint, string apiKey, string runId, CancellationToken cancellationToken = default)
     {
-        var queryTask = Task.Run(async () =>
+        try
         {
-            // Create OpenAI client configured for OpenRouter
-            var openAIClient = new OpenAIClient(
-                new ApiKeyCredential(apiKey),
-                new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
+            var queryTask = Task.Run(async () =>
+            {
+                // Create OpenAI client configured for OpenRouter
+                var openAIClient = new OpenAIClient(
+                    new ApiKeyCredential(apiKey),
+                    new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
+                );
+                
+                // Get the chat client and create an AI Agent using the Microsoft Agent Framework
+                var chatClient = openAIClient.GetChatClient(model);
+                AIAgent agent = chatClient.CreateAIAgent();
+
+                // Use AgentThread for conversation state
+                AgentThread thread = agent.GetNewThread();
+                
+                // Run the agent with the prompt
+                var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+                
+                return response.Text ?? string.Empty;
+            }, cancellationToken);
+            
+            // Wait for either completion or cancellation
+            var completedTask = await Task.WhenAny(
+                queryTask,
+                Task.Delay(Timeout.Infinite, cancellationToken)
             );
             
-            // Get the chat client and create an AI Agent using the Microsoft Agent Framework
-            var chatClient = openAIClient.GetChatClient(model);
-            AIAgent agent = chatClient.CreateAIAgent();
-
-            // Use AgentThread for conversation state
-            AgentThread thread = agent.GetNewThread();
+            if (completedTask != queryTask)
+            {
+                _runTracker.WriteLog(runId, $"One-off query to {model} timed out");
+                throw new OperationCanceledException($"Query to {model} timed out");
+            }
             
-            // Run the agent with the prompt
-            var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
-            
-            return response.Text ?? string.Empty;
-        }, cancellationToken);
-        
-        // Wait for either completion or cancellation
-        var completedTask = await Task.WhenAny(
-            queryTask,
-            Task.Delay(Timeout.Infinite, cancellationToken)
-        );
-        
-        if (completedTask != queryTask)
-        {
-            throw new OperationCanceledException($"Query to {model} timed out");
+            return await queryTask;
         }
-        
-        return await queryTask;
+        catch (OperationCanceledException)
+        {
+            // Already logged, just rethrow
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in one-off query to model {Model}", model);
+            throw;
+        }
     }
 }

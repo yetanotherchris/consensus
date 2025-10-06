@@ -14,15 +14,18 @@ public class ConsensusController : ControllerBase
 {
     private readonly IJobScheduler _jobScheduler;
     private readonly IOutputFileService _outputFileService;
+    private readonly ILogReader _logReader;
     private readonly ILogger<ConsensusController> _logger;
 
     public ConsensusController(
         IJobScheduler jobScheduler,
         IOutputFileService outputFileService,
+        ILogReader logReader,
         ILogger<ConsensusController> logger)
     {
         _jobScheduler = jobScheduler;
         _outputFileService = outputFileService;
+        _logReader = logReader;
         _logger = logger;
     }
 
@@ -33,27 +36,13 @@ public class ConsensusController : ControllerBase
     /// <returns>List of log entries</returns>
     [HttpGet("{runId}/logs")]
     [ProducesResponseType(typeof(IEnumerable<LogEntryModel>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<LogEntryModel>>> GetLogs(string runId)
     {
         _logger.LogInformation("Getting logs for runId: {RunId}", runId);
 
-        // Check if job exists
-        var jobStatus = await _jobScheduler.GetJobStatusAsync(runId);
-        if (jobStatus == null)
-        {
-            return NotFound(new { message = $"Run ID '{runId}' not found" });
-        }
-
-        // Return stubbed log data
-        var logs = new List<LogEntryModel>
-        {
-            new() { Timestamp = DateTime.UtcNow.AddMinutes(-5), Message = $"[{runId}] Consensus job started" },
-            new() { Timestamp = DateTime.UtcNow.AddMinutes(-4), Message = $"[{runId}] Agent 1 responded" },
-            new() { Timestamp = DateTime.UtcNow.AddMinutes(-3), Message = $"[{runId}] Agent 2 responded" },
-            new() { Timestamp = DateTime.UtcNow.AddMinutes(-2), Message = $"[{runId}] Agent 3 responded" },
-            new() { Timestamp = DateTime.UtcNow.AddMinutes(-1), Message = $"[{runId}] Synthesis completed" }
-        };
+        // Read logs from file
+        // Note: FileLogReader will return an error entry if the log file doesn't exist
+        var logs = await _logReader.ReadLogsAsync(runId);
 
         return Ok(logs);
     }

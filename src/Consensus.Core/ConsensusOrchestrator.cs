@@ -4,6 +4,7 @@ using Consensus.Configuration;
 using Consensus.Logging;
 using Consensus.Models;
 using Consensus.Services;
+using Consensus.Channels;
 
 namespace Consensus;
 
@@ -13,7 +14,7 @@ namespace Consensus;
 public class ConsensusOrchestrator
 {
     private readonly ConsensusConfiguration _config;
-    private readonly SimpleFileLogger _logger;
+    private readonly ConsensusRunTracker _runTracker;
     private readonly IAgentService _agentService;
     private readonly IPromptBuilder _promptBuilder;
     private readonly ISynthesizerService _synthesizerService;
@@ -22,7 +23,7 @@ public class ConsensusOrchestrator
 
     public ConsensusOrchestrator(
         ConsensusConfiguration config,
-        SimpleFileLogger logger,
+        ConsensusRunTracker runTracker,
         IAgentService agentService,
         IPromptBuilder promptBuilder,
         ISynthesizerService synthesizerService,
@@ -30,7 +31,7 @@ public class ConsensusOrchestrator
         IHtmlOutputService htmlOutputService)
     {
         _config = config;
-        _logger = logger;
+        _runTracker = runTracker;
         _agentService = agentService;
         _promptBuilder = promptBuilder;
         _synthesizerService = synthesizerService;
@@ -43,17 +44,22 @@ public class ConsensusOrchestrator
     /// </summary>
     /// <param name="prompt">The prompt to send to all models</param>
     /// <param name="models">Array of model names to query</param>
-    public async Task<ConsensusResult> GetConsensusAsync(string prompt, string[] models)
+    /// <param name="runId">Optional run identifier for tracking. If not provided, a new GUID will be generated.</param>
+    public async Task<ConsensusResult> GetConsensusAsync(string prompt, string[] models, string? runId = null)
     {
         var stopwatch = Stopwatch.StartNew();
+        
+        // Generate run ID if not provided
+        runId ??= Guid.NewGuid().ToString();
         
         // Calculate minimum agents required: at least 2/3 of models, minimum of 3
         int minimumAgentsRequired = Math.Max(3, models.Length * 2 / 3);
         
-        _logger.LogInformation("=== CONSENSUS BUILDING STARTED (Parallel-then-Synthesize) ===");
-        _logger.LogInformation("Models: {0}", string.Join(", ", models));
-        _logger.LogInformation("Timeout per agent: {0}s", _config.AgentTimeoutSeconds);
-        _logger.LogInformation("Minimum agents required: {0}", minimumAgentsRequired);
+        _runTracker.WriteLog(runId, "=== CONSENSUS BUILDING STARTED (Parallel-then-Synthesize) ===");
+        _runTracker.WriteLog(runId, $"Run ID: {runId}");
+        _runTracker.WriteLog(runId, $"Models: {string.Join(", ", models)}");
+        _runTracker.WriteLog(runId, $"Timeout per agent: {_config.AgentTimeoutSeconds}s");
+        _runTracker.WriteLog(runId, $"Minimum agents required: {minimumAgentsRequired}");
 
         // Create consensus request
         var request = new ConsensusRequest
@@ -67,37 +73,35 @@ public class ConsensusOrchestrator
         };
 
         // Initialize agents
-        _logger.LogInformation("Initializing agents for each model...");
-        await _agentService.InitializeAgentsAsync(models, _config.ApiEndpoint, _config.ApiKey);
-        _logger.LogInformation("✓ Initialized {0} agent contexts", models.Length);
+        await _agentService.InitializeAgentsAsync(models, _config.ApiEndpoint, _config.ApiKey, runId);
 
         // Phase 1: Divergent Collection (Parallel)
-        _logger.LogInformation("=== PHASE 1: DIVERGENT COLLECTION (PARALLEL) ===");
-        var responses = await CollectResponsesAsync(request, models);
+        _runTracker.WriteLog(runId, "=== PHASE 1: DIVERGENT COLLECTION (PARALLEL) ===");
+        var responses = await CollectResponsesAsync(request, models, runId);
 
         // Check minimum threshold
         if (responses.Count < minimumAgentsRequired)
         {
-            throw new InvalidOperationException(
-                $"Only {responses.Count} of {models.Length} agents responded successfully. " +
-                $"Minimum required: {minimumAgentsRequired}");
+            var errorMsg = $"Only {responses.Count} of {models.Length} agents responded successfully. " +
+                $"Minimum required: {minimumAgentsRequired}";
+            _runTracker.WriteLog(runId, $"ERROR: {errorMsg}");
+            throw new InvalidOperationException(errorMsg);
         }
 
-        _logger.LogInformation("✓ Collected {0} responses (minimum: {1})", 
-            responses.Count, minimumAgentsRequired);
+        _runTracker.WriteLog(runId, $"✓ Collected {responses.Count} responses (minimum: {minimumAgentsRequired})");
 
         // Phase 2: Convergent Synthesis
-        _logger.LogInformation("=== PHASE 2: CONVERGENT SYNTHESIS ===");
+        _runTracker.WriteLog(runId, "=== PHASE 2: CONVERGENT SYNTHESIS ===");
         using var synthesisCts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds * 2));
         string judgeModel = models[0];
-        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, judgeModel, synthesisCts.Token);
+        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, judgeModel, runId, synthesisCts.Token);
 
         stopwatch.Stop();
         result.TotalProcessingTime = stopwatch.Elapsed;
 
-        _logger.LogInformation("=== CONSENSUS BUILDING COMPLETED ===");
-        _logger.LogInformation("Total time: {0:F2}s", result.TotalProcessingTime.TotalSeconds);
-        _logger.LogInformation("Consensus level: {0}", result.ConsensusLevel);
+        _runTracker.WriteLog(runId, "=== CONSENSUS BUILDING COMPLETED ===");
+        _runTracker.WriteLog(runId, $"Total time: {result.TotalProcessingTime.TotalSeconds:F2}s");
+        _runTracker.WriteLog(runId, $"Consensus level: {result.ConsensusLevel}");
 
         return result;
     }
@@ -107,12 +111,13 @@ public class ConsensusOrchestrator
     /// </summary>
     /// <param name="request">The consensus request</param>
     /// <param name="models">Array of model names to query</param>
-    public async Task<List<ModelResponse>> CollectResponsesAsync(ConsensusRequest request, string[] models)
+    /// <param name="runId">The run identifier for tracking</param>
+    public async Task<List<ModelResponse>> CollectResponsesAsync(ConsensusRequest request, string[] models, string runId)
     {
         // Build enhanced prompt
         string enhancedPrompt = _promptBuilder.BuildEnhancedDivergentPrompt(request);
         
-        _logger.LogInformation("Querying {0} models in parallel...", models.Length);
+        _runTracker.WriteLog(runId, $"Querying {models.Length} models in parallel...");
 
         // Create tasks for all models with individual timeouts
         var queryTasks = models.Select(async model =>
@@ -120,23 +125,22 @@ public class ConsensusOrchestrator
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds));
-                _logger.LogInformation("Querying {0}...", model);
+                _runTracker.WriteLog(runId, $"Querying {model}...");
                 
-                var response = await _agentService.QueryModelWithResponseAsync(model, enhancedPrompt, cts.Token);
+                var response = await _agentService.QueryModelWithResponseAsync(model, enhancedPrompt, runId, cts.Token);
                 
-                _logger.LogInformation("✓ {0} completed successfully (Confidence: {1:P0})", 
-                    model, response.ConfidenceScore);
+                _runTracker.WriteLog(runId, $"✓ {model} completed successfully (Confidence: {response.ConfidenceScore:P0})");
                 
                 return (success: true, response: response);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("✗ {0} timed out after {1}s", model, _config.AgentTimeoutSeconds);
+                _runTracker.WriteLog(runId, $"✗ {model} timed out after {_config.AgentTimeoutSeconds}s");
                 return (success: false, response: (ModelResponse?)null);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "✗ {0} failed", model);
+                _runTracker.WriteLog(runId, $"✗ {model} failed: {ex.Message}");
                 return (success: false, response: (ModelResponse?)null);
             }
         }).ToList();

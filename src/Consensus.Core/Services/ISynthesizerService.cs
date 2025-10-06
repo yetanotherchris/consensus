@@ -13,7 +13,8 @@ public interface ISynthesizerService
     /// <param name="originalPrompt">The original user prompt</param>
     /// <param name="responses">All model responses collected</param>
     /// <param name="judgeModel">The model to use as the judge/synthesizer</param>
+    /// <param name="runId">The run identifier for tracking</param>
     /// <param name="cancellationToken">Cancellation token for timeout handling</param>
     /// <returns>A ConsensusResult with synthesis, reasoning, and analysis</returns>
-    Task<ConsensusResult> SynthesizeAsync(string originalPrompt, List<ModelResponse> responses, string judgeModel, CancellationToken cancellationToken = default);
+    Task<ConsensusResult> SynthesizeAsync(string originalPrompt, List<ModelResponse> responses, string judgeModel, string runId, CancellationToken cancellationToken = default);
 }
