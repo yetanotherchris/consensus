@@ -15,9 +15,13 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Add all consensus building services to the service collection
     /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="configuration">Consensus configuration settings</param>
+    /// <param name="logDirectory">Directory where consensus run logs will be stored. Defaults to "./output/logs"</param>
     public static IServiceCollection AddConsensus(
         this IServiceCollection services,
-        ConsensusConfiguration configuration)
+        ConsensusConfiguration configuration,
+        string? logDirectory = null)
     {
         // Register configuration as singleton
         services.AddSingleton(configuration);
@@ -29,8 +33,15 @@ public static class ServiceCollectionExtensions
             builder.SetMinimumLevel(LogLevel.Information);
         });
 
-        // Register channel-based run tracker as singleton
-        services.AddSingleton<ConsensusRunTracker>();
+        // Determine log directory
+        var effectiveLogDirectory = logDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "output", "logs");
+
+        // Register channel-based run tracker as singleton with disposal
+        services.AddSingleton<ConsensusRunTracker>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<ConsensusRunTracker>>();
+            return new ConsensusRunTracker(logger, effectiveLogDirectory);
+        });
 
         // Register services as transient (new instance per resolution)
         services.AddTransient<IAgentService, AgentService>();

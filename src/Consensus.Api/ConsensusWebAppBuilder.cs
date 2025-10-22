@@ -76,9 +76,10 @@ public class ConsensusWebAppBuilder
     {
         ConsensusConfiguration consensusConfig = GetConfiguration();
         string outputDirectory = GetConfigValue("OutputDirectory") ?? Path.Combine(Directory.GetCurrentDirectory(), "output");
+        string logDirectory = Path.Combine(outputDirectory, "logs");
 
-        // Add consensus services
-        services.AddConsensus(consensusConfig)
+        // Add consensus services with configurable log directory
+        services.AddConsensus(consensusConfig, logDirectory)
                 .AddSimpleFileLogger(outputDirectory)
                 .AddFileOutputWriter(outputDirectory);
 

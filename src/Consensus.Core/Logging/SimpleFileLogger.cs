@@ -53,54 +53,9 @@ public class SimpleFileLogger
         {
             // Write to file
             File.AppendAllText(_logFilePath, logEntry + Environment.NewLine);
-            
+
             // Also write to console for immediate feedback
             Console.WriteLine(logEntry);
-        }
-    }
-    
-    static string _logPath = Path.Combine(Directory.GetCurrentDirectory(), "output", "logs");
-
-    /// <summary>
-    /// Static method for writing log entries to run-specific log files.
-    /// Thread-safe for concurrent writes to different files.
-    /// </summary>
-    /// <param name="runId">The unique identifier for the consensus run</param>
-    /// <param name="message">The message to log</param>
-    public static void WriteLogEntry(string runId, string message)
-    {
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var logEntry = $"[INFO][{timestamp}] {message}";
-
-
-        var logFilePath = Path.Combine(_logPath, $"consensus-{runId}.log");
-
-        // Ensure directory exists
-        if (!Directory.Exists(_logPath))
-        {
-            Directory.CreateDirectory(_logPath);
-        }
-
-        // Use file-specific lock to allow concurrent writes to different files
-        lock (GetFileLock(logFilePath))
-        {
-            File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
-        }
-    }
-
-    // Static dictionary for file-specific locks
-    private static readonly Dictionary<string, object> _fileLocks = new();
-    private static readonly object _fileLockDictionaryLock = new();
-
-    private static object GetFileLock(string filePath)
-    {
-        lock (_fileLockDictionaryLock)
-        {
-            if (!_fileLocks.ContainsKey(filePath))
-            {
-                _fileLocks[filePath] = new object();
-            }
-            return _fileLocks[filePath];
         }
     }
 }
