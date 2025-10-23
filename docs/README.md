@@ -1,8 +1,17 @@
 # consensus
 .NET command line and web application to ask multiple models a question, and provide a synthesized consensus answer using a judge.
 
-#### Scripts
-A few experimental scripts and prompts are in this repo using [ask-llm](https://github.com/yetanotherchris/ask-llm), to be deleted.
+<img width="773" height="331" alt="image" src="https://github.com/user-attachments/assets/2dc34183-d185-4294-b4d5-f9125fab44ea" />
+
+ReactJS and Tailwind for the frontend, .NET 9 for the backend/API.
+
+## Quick start
+
+- Clone the repo
+- Install .NET 9 and NodeJS
+- `cd .\src\Consensus.Api\` and `dotnet run`
+- (New terminal) `cd .\src\Consensus.Web\` and `npm run dev`
+
 
 ## Docker
 
@@ -36,3 +45,6 @@ docker run --rm `
     -e OUTPUT_FILENAMES_ID="custom-id" `
     consensus
 ```
+
+#### Scripts
+A few experimental scripts and prompts are in this repo using [ask-llm](https://github.com/yetanotherchris/ask-llm), to be deleted.
