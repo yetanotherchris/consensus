@@ -3,7 +3,19 @@
 
 <img width="773" height="331" alt="image" src="https://github.com/user-attachments/assets/2dc34183-d185-4294-b4d5-f9125fab44ea" />
 
-ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.
+## Overview
+ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.  
+
+The app builds prompts for building a consensus using [prompt templates](https://github.com/yetanotherchris/consensus/tree/main/src/Consensus.Core/Templates) and then the first LLM as the judge (Claude).
+Currently there are 6 models hardcoded into the API, and assumes you're using openroute.ai: 
+  - anthropic/claude-sonnet-4
+  - x-ai/grok-3
+  - qwen/qwen3-vl-235b-a22b-thinking
+  - alibaba/tongyi-deepresearch-30b-a3b
+  - google/gemini-2.5-pro
+  - openai/gpt-5
+
+This list will be configurable in the future. Once the consensus 'report' is provided, it's not intended to be available later as the original design was for privacy. But as each prompt has a "runId" it can be changed quite easily.
 
 ## Quick start
 
