@@ -7,10 +7,13 @@ ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and
 
 ## Quick start
 
-- Clone the repo
 - Install .NET 9 and NodeJS
+- Clone the repo
+- Add environment variables:
+  - `CONSENSUS_API_ENDPOINT` e.g. https://openrouter.ai/api/v1
+  - `CONSENSUS_API_KEY` e.g. `sk-blah-blah`
 - `cd .\src\Consensus.Api\` and `dotnet run`
-- (New terminal) `cd .\src\Consensus.Web\` and `npm run dev`
+- _(New terminal)_ `cd .\src\Consensus.Web\` and `npm run dev`
 - Go to `http://localhost:5173/` in a browser (or the port Vite provides for `npm run dev`)
 
 
