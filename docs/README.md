@@ -3,7 +3,7 @@
 
 <img width="773" height="331" alt="image" src="https://github.com/user-attachments/assets/2dc34183-d185-4294-b4d5-f9125fab44ea" />
 
-ReactJS and Tailwind for the frontend, .NET 9 for the backend/API.
+ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.
 
 ## Quick start
 
@@ -11,6 +11,7 @@ ReactJS and Tailwind for the frontend, .NET 9 for the backend/API.
 - Install .NET 9 and NodeJS
 - `cd .\src\Consensus.Api\` and `dotnet run`
 - (New terminal) `cd .\src\Consensus.Web\` and `npm run dev`
+- Go to `http://localhost:5173/` in a browser (or the port Vite provides for `npm run dev`)
 
 
 ## Docker
