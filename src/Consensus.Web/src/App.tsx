@@ -104,7 +104,7 @@ function App() {
                 consensus
               </h1>
               <p className="text-base text-gray-600">
-                Generate a consensus from multiple AI agents
+                Generate a consensus from multiple AI models
               </p>
             </div>
           )}
