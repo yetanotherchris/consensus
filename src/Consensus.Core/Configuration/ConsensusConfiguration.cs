@@ -15,7 +15,13 @@ public class ConsensusConfiguration
     /// Currently not used - reserved for future domain-specific enhancements
     /// </summary>
     public string Domain { get; init; } = "General";
-    
+
+    // Model configuration
+    /// <summary>
+    /// List of AI models to query for consensus building
+    /// </summary>
+    public string[] Models { get; init; } = Array.Empty<string>();
+
     // Timeout and threshold configuration
     /// <summary>
     /// Timeout in seconds for each individual agent query

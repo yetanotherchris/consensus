@@ -60,11 +60,15 @@ public class ConsensusWebAppBuilder
         var includeIndividualResponsesValue = GetConfigValue("Consensus:IncludeIndividualResponses");
         var includeIndividualResponses = string.IsNullOrEmpty(includeIndividualResponsesValue) || bool.Parse(includeIndividualResponsesValue);
 
+        // Read Models array from configuration
+        var models = _configuration.GetSection("Consensus:Models").Get<string[]>() ?? Array.Empty<string>();
+
         var consensusConfig = new ConsensusConfiguration
         {
             ApiEndpoint = apiEndpoint,
             ApiKey = apiKey,
             Domain = domain,
+            Models = models,
             AgentTimeoutSeconds = agentTimeoutSeconds,
             IncludeIndividualResponses = includeIndividualResponses
         };
@@ -75,6 +79,9 @@ public class ConsensusWebAppBuilder
     public void RegisterServices(IServiceCollection services)
     {
         ConsensusConfiguration consensusConfig = GetConfiguration();
+
+        // Register ConsensusConfiguration as singleton for injection
+        services.AddSingleton(consensusConfig);
         string outputDirectory = GetConfigValue("OutputDirectory") ?? Path.Combine(Directory.GetCurrentDirectory(), "output");
         string logDirectory = Path.Combine(outputDirectory, "logs");
 

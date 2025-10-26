@@ -1,4 +1,5 @@
 using Consensus;
+using Consensus.Configuration;
 using Quartz;
 
 namespace Consensus.Api.Jobs;
@@ -10,24 +11,16 @@ public class ConsensusJob : IJob
 {
     private readonly ILogger<ConsensusJob> _logger;
     private readonly ConsensusOrchestrator _orchestrator;
-
-    // Hardcoded models from models.txt
-    private static readonly string[] Models = new[]
-    {
-        "anthropic/claude-sonnet-4",
-        "x-ai/grok-3",
-        "qwen/qwen3-vl-235b-a22b-thinking",
-        "alibaba/tongyi-deepresearch-30b-a3b",
-        "google/gemini-2.5-pro",
-        "openai/gpt-5"
-    };
+    private readonly ConsensusConfiguration _configuration;
 
     public ConsensusJob(
         ILogger<ConsensusJob> logger,
-        ConsensusOrchestrator orchestrator)
+        ConsensusOrchestrator orchestrator,
+        ConsensusConfiguration configuration)
     {
         _logger = logger;
         _orchestrator = orchestrator;
+        _configuration = configuration;
     }
 
     public async Task Execute(IJobExecutionContext context)
@@ -54,16 +47,23 @@ public class ConsensusJob : IJob
 
         try
         {
+            // Validate that models are configured
+            if (_configuration.Models == null || _configuration.Models.Length == 0)
+            {
+                _logger.LogError("No models configured in appsettings.json for runId: {RunId}", runId);
+                throw new InvalidOperationException("No models configured. Please add Consensus:Models to appsettings.json or set CONSENSUS__MODELS environment variable.");
+            }
+
             // Execute consensus building process
-            _logger.LogInformation("Building consensus for runId: {RunId} with {ModelCount} models", runId, Models.Length);
-            
-            var result = await _orchestrator.GetConsensusAsync(prompt, Models, runId);
-            
+            _logger.LogInformation("Building consensus for runId: {RunId} with {ModelCount} models", runId, _configuration.Models.Length);
+
+            var result = await _orchestrator.GetConsensusAsync(prompt, _configuration.Models, runId);
+
             // Save the output (markdown, HTML, logs) with runId as filename identifier
             _logger.LogInformation("Saving consensus results for runId: {RunId}", runId);
             await _orchestrator.SaveConsensusAsync(result, runId);
-            
-            _logger.LogInformation("ConsensusJob completed successfully for runId: {RunId}, Consensus Level: {ConsensusLevel}", 
+
+            _logger.LogInformation("ConsensusJob completed successfully for runId: {RunId}, Consensus Level: {ConsensusLevel}",
                 runId, result.ConsensusLevel);
         }
         catch (Exception ex)

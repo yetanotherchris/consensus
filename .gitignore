@@ -391,3 +391,4 @@ FodyWeavers.xsd
 # Consenus input/output
 output/
 test-prompt*.txt
+src/Consensus.Api/.claude/settings.local.json
