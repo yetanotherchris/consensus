@@ -1,5 +1,5 @@
 # consensus
-.NET command line and web application to ask multiple models a question, and provide a synthesized consensus answer using a judge.
+consensus is a web application (+command line tool) to ask multiple models a question, and provide a synthesized consensus answer using one model as the judge.
 
 ## Overview
 ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.  
