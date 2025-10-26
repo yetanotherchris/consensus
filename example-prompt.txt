@@ -1,4 +1,0 @@
-What are the top 5 prescribed drugs in the UK? 
-Factor in the typical length of time a single prescription lasts, e.g. 2 weeks supply. Factor in this and the number of prescriptions.
-
-Include information about drugs for mental health.

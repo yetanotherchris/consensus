@@ -1,6 +1,8 @@
 # consensus
 .NET command line and web application to ask multiple models a question, and provide a synthesized consensus answer using a judge.
 
+[Example prompt and model costs](./prompt-model-costs.md)
+
 #### Scripts
 A few experimental scripts and prompts are in this repo using [ask-llm](https://github.com/yetanotherchris/ask-llm), to be deleted.
 

@@ -32,3 +32,22 @@ test-*.txt
 
 # Logs
 *.log
+
+# Frontend
+**/node_modules/
+**/dist/
+**/.next/
+**/.nuxt/
+**/.vuepress/dist/
+
+# CI/CD
+.github/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local

@@ -127,48 +127,22 @@ dotnet test src/Consensus.RedisTest/Consensus.RedisTest.csproj
 
 ### Docker
 
-#### Console Application (Docker)
+The default Dockerfile builds the full-stack application (Web + API). For complete Docker deployment instructions, including how to pass model arrays, configure environment variables, and deploy to production, see [docker.md](docker.md).
+
+Quick start:
 
 ```bash
 # Build
-docker build -t consensus . && docker image prune -f
+docker build -t consensus .
 
-# Run (Linux/macOS)
-docker run --rm \
-    -v $(pwd):/app/data \
-    -e CONSENSUS_API_ENDPOINT=https://openrouter.ai/api/v1 \
-    -e CONSENSUS_API_KEY=your-key-here \
-    -e PROMPT_FILE=/app/data/prompt.txt \
-    -e MODELS_FILE=/app/data/models.txt \
-    -e OUTPUT_FILENAMES_ID=custom-id \
-    consensus
-
-# Run (PowerShell)
-docker run --rm `
-    -v "${PWD}:/app/data" `
-    -e CONSENSUS_API_ENDPOINT="https://openrouter.ai/api/v1" `
-    -e CONSENSUS_API_KEY="your-key-here" `
-    -e PROMPT_FILE="/app/data/prompt.txt" `
-    -e MODELS_FILE="/app/data/models.txt" `
-    -e OUTPUT_FILENAMES_ID="custom-id" `
+# Run
+docker run -d -p 8080:8080 \
+    -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
+    -e Consensus__ApiKey="your-key-here" \
     consensus
 ```
 
-#### Full Stack (Docker Compose)
-
-```bash
-# Start services (API + Redis)
-cd docker
-docker-compose up -d
-
-# Stop services
-docker-compose down
-
-# View logs
-docker-compose logs -f
-```
-
-The API will be accessible at `http://localhost:5000` with Redis on port 6379.
+Access at `http://localhost:8080`
 
 ## Development Guidelines
 

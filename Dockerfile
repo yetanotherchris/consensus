@@ -1,55 +1,47 @@
-# Multi-stage Dockerfile for Consensus.Console
+FROM node:22-alpine AS frontend-build
+WORKDIR /src/web
 
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+COPY src/Consensus.Web/package*.json ./
+RUN npm ci
+
+COPY src/Consensus.Web/ ./
+RUN npm run build
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS backend-build
 WORKDIR /src
 
-# Copy solution and project files
 COPY consensus.sln .
 COPY Directory.Packages.props .
-COPY src/Consensus.Console/Consensus.Console.csproj src/Consensus.Console/
+COPY src/Consensus.Api/Consensus.Api.csproj src/Consensus.Api/
 COPY src/Consensus.Core/Consensus.Core.csproj src/Consensus.Core/
 
-# Restore dependencies
-RUN dotnet restore src/Consensus.Console/Consensus.Console.csproj
+RUN dotnet restore src/Consensus.Api/Consensus.Api.csproj
 
-# Copy all source code
-COPY src/ src/
+COPY src/Consensus.Core/ src/Consensus.Core/
+COPY src/Consensus.Api/ src/Consensus.Api/
+COPY --from=frontend-build /src/web/dist /src/src/Consensus.Api/wwwroot
 
-# Build and publish the application
-RUN dotnet publish src/Consensus.Console/Consensus.Console.csproj \
+RUN dotnet publish src/Consensus.Api/Consensus.Api.csproj \
     -c Release \
     -o /app/publish \
     --no-restore
 
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/runtime:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Copy the published application
-COPY --from=build /app/publish .
+COPY --from=backend-build /app/publish .
 
-# Create directories for input files and output
-RUN mkdir -p /app/data /app/output/logs /app/output/responses
+RUN mkdir -p /app/output/logs /app/output/responses
 
-# Set working directory to /app/data for file operations
-WORKDIR /app/data
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    ASPNETCORE_URLS=http://+:8080 \
+    Consensus__ApiEndpoint="" \
+    Consensus__ApiKey="" \
+    Consensus__Domain="General" \
+    Consensus__AgentTimeoutSeconds="120" \
+    Consensus__IncludeIndividualResponses="true" \
+    OutputDirectory="/app/output"
 
-# Environment variables (with defaults)
-ENV PROMPT_FILE=/app/data/prompt.txt
-ENV MODELS_FILE=/app/data/models.txt
-ENV OUTPUT_FILENAMES_ID=""
-ENV CONSENSUS_API_ENDPOINT=""
-ENV CONSENSUS_API_KEY=""
+EXPOSE 8080
 
-# Create entrypoint script
-RUN echo '#!/bin/sh\n\
-ARGS="--prompt-file $PROMPT_FILE --models-file $MODELS_FILE"\n\
-if [ -n "$OUTPUT_FILENAMES_ID" ]; then\n\
-    ARGS="$ARGS --output-filenames-id $OUTPUT_FILENAMES_ID"\n\
-fi\n\
-\n\
-exec /app/consensus $ARGS\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
-
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["dotnet", "Consensus.Api.dll"]
