@@ -33,10 +33,25 @@ jobs:
       - name: Extract version from tag
         id: meta
         run: |
-          # Remove 'v' prefix from tag (e.g., v1.0.1 -> 1.0.1)
-          VERSION=${GITHUB_REF#refs/tags/v}
+          # Extract tag name (e.g., refs/tags/v1.0.1 -> v1.0.1)
+          TAG=${GITHUB_REF#refs/tags/}
+
+          # Remove 'v' prefix if present (e.g., v1.0.1 -> 1.0.1)
+          VERSION=${TAG#v}
+
+          # Remove any leading dots or dashes (invalid for Docker tags)
+          VERSION=${VERSION#.}
+          VERSION=${VERSION#-}
+
+          # Validate version is not empty
+          if [ -z "$VERSION" ]; then
+            echo "Error: Version is empty after processing tag: $TAG"
+            exit 1
+          fi
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Version: ${VERSION}"
+          echo "Git tag: ${TAG}"
+          echo "Docker version: ${VERSION}"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
