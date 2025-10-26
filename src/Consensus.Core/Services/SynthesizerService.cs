@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Consensus.Channels;
 using Consensus.Configuration;
 using Consensus.Models;
@@ -72,16 +73,62 @@ public class SynthesizerService : ISynthesizerService
 
     private ConsensusResult ParseSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt, string runId)
     {
+        // Try XML parsing first
+        try
+        {
+            return ParseXmlSynthesisResponse(synthesisResponse, originalResponses, originalPrompt, runId);
+        }
+        catch (Exception ex)
+        {
+            _runTracker.WriteLog(runId, $"XML parsing failed: {ex.Message}, falling back to text parsing");
+        }
+
+        // Fall back to text-based parsing for backwards compatibility
+        return ParseTextSynthesisResponse(synthesisResponse, originalResponses, originalPrompt, runId);
+    }
+
+    private ConsensusResult ParseXmlSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt, string runId)
+    {
+        // Extract the <synthesis> block if it exists
+        var synthesisMatch = Regex.Match(synthesisResponse, @"<synthesis>(.+?)</synthesis>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        string xmlContent = synthesisMatch.Success ? $"<synthesis>{synthesisMatch.Groups[1].Value}</synthesis>" : synthesisResponse;
+
+        var doc = XDocument.Parse(xmlContent);
+        var synthesis = doc.Root ?? throw new Exception("No root element found");
+
+        var result = new ConsensusResult
+        {
+            SynthesizedAnswer = synthesis.Element("synthesized_answer")?.Value.Trim() ?? string.Empty,
+            SynthesisReasoning = synthesis.Element("reasoning")?.Value.Trim() ?? string.Empty,
+            Summary = synthesis.Element("summary")?.Value.Trim() ?? "No summary provided",
+            OverallConfidence = ParseConfidence(synthesis.Element("confidence")?.Value ?? "0"),
+            ConsensusLevel = ParseConsensusLevel(synthesis.Element("consensus_level")?.Value ?? "Conflicted"),
+            IndividualResponses = originalResponses,
+            AgreementPoints = ParseXmlAgreementPoints(synthesis.Element("agreement_points")),
+            Disagreements = ParseXmlDisagreements(synthesis.Element("disagreements")),
+            OriginalPrompt = originalPrompt
+        };
+
+        if (string.IsNullOrWhiteSpace(result.SynthesizedAnswer))
+        {
+            throw new Exception("Synthesized answer is empty");
+        }
+
+        return result;
+    }
+
+    private ConsensusResult ParseTextSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt, string runId)
+    {
         // Extract summary from XML tags
         string summary = "No summary provided by model";
-        var summaryMatch = Regex.Match(synthesisResponse, @"<summary>(.+?)</summary>", 
+        var summaryMatch = Regex.Match(synthesisResponse, @"<summary>(.+?)</summary>",
             RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        
+
         if (summaryMatch.Success)
         {
             summary = summaryMatch.Groups[1].Value.Trim();
         }
-        
+
         // Extract structured sections from the synthesis response
         var result = new ConsensusResult
         {
@@ -108,13 +155,22 @@ public class SynthesizerService : ISynthesizerService
 
     private string ExtractSection(string response, string sectionName)
     {
-        // Try to extract content after "SECTION_NAME:"
+        // Try format 1: "SECTION_NAME:" followed by content until next section or end
         var pattern = $@"{Regex.Escape(sectionName)}:\s*(.+?)(?=\n[A-Z\s]+:|$)";
         var match = Regex.Match(response, pattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        
+
         if (match.Success)
         {
             return match.Groups[1].Value.Trim();
+        }
+
+        // Try format 2: Markdown header "## SECTION_NAME" or "# SECTION_NAME"
+        var markdownPattern = $@"^#{1,3}\s+{Regex.Escape(sectionName)}\s*$\n(.+?)(?=^#{1,3}\s+|\Z)";
+        var markdownMatch = Regex.Match(response, markdownPattern, RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+        if (markdownMatch.Success)
+        {
+            return markdownMatch.Groups[1].Value.Trim();
         }
 
         return string.Empty;
@@ -188,11 +244,134 @@ public class SynthesizerService : ISynthesizerService
         if (string.IsNullOrWhiteSpace(disagreementText))
             return disagreements;
 
-        // Only add disagreement if there's actual content to display
-        // The empty disagreement with no views was causing "Model Disagreements" to show with no content
-        // For now, we'll return an empty list since we don't have a sophisticated parser yet
-        // A more sophisticated parser could extract multiple disagreements and their views
-        
+        // Check if explicitly marked as "None"
+        if (disagreementText.Trim().Equals("None", StringComparison.OrdinalIgnoreCase))
+            return disagreements;
+
+        // Parse structured format:
+        // - TOPIC: [topic description]
+        //   MODEL: [model name] - [their position]
+        //   MODEL: [model name] - [their position]
+        var lines = disagreementText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        Disagreement? currentDisagreement = null;
+
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+
+            // Check for topic line (starts with - TOPIC:)
+            if (trimmedLine.StartsWith("- TOPIC:", StringComparison.OrdinalIgnoreCase))
+            {
+                // Save previous disagreement if exists
+                if (currentDisagreement != null && currentDisagreement.Views.Any())
+                {
+                    disagreements.Add(currentDisagreement);
+                }
+
+                // Start new disagreement
+                var topic = trimmedLine.Substring("- TOPIC:".Length).Trim();
+                currentDisagreement = new Disagreement
+                {
+                    Topic = topic,
+                    Views = new List<DissentingView>()
+                };
+            }
+            // Check for model view line (starts with MODEL:)
+            else if (trimmedLine.StartsWith("MODEL:", StringComparison.OrdinalIgnoreCase) && currentDisagreement != null)
+            {
+                var viewText = trimmedLine.Substring("MODEL:".Length).Trim();
+
+                // Split on " - " to separate model name from position
+                var parts = viewText.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                if (parts.Length == 2)
+                {
+                    currentDisagreement.Views.Add(new DissentingView
+                    {
+                        ModelName = parts[0].Trim(),
+                        Position = parts[1].Trim()
+                    });
+                }
+            }
+        }
+
+        // Add the last disagreement if exists
+        if (currentDisagreement != null && currentDisagreement.Views.Any())
+        {
+            disagreements.Add(currentDisagreement);
+        }
+
+        return disagreements;
+    }
+
+    private List<ConsensusPoint> ParseXmlAgreementPoints(XElement? agreementPointsElement)
+    {
+        var points = new List<ConsensusPoint>();
+
+        if (agreementPointsElement == null)
+            return points;
+
+        foreach (var pointElement in agreementPointsElement.Elements("point"))
+        {
+            var pointText = pointElement.Value.Trim();
+            if (!string.IsNullOrWhiteSpace(pointText))
+            {
+                points.Add(new ConsensusPoint
+                {
+                    Point = pointText,
+                    SupportingModels = 0,
+                    ModelNames = new List<string>()
+                });
+            }
+        }
+
+        return points;
+    }
+
+    private List<Disagreement> ParseXmlDisagreements(XElement? disagreementsElement)
+    {
+        var disagreements = new List<Disagreement>();
+
+        if (disagreementsElement == null)
+            return disagreements;
+
+        foreach (var disagreementElement in disagreementsElement.Elements("disagreement"))
+        {
+            var topic = disagreementElement.Element("topic")?.Value.Trim();
+            if (string.IsNullOrWhiteSpace(topic))
+                continue;
+
+            var disagreement = new Disagreement
+            {
+                Topic = topic,
+                Views = new List<DissentingView>()
+            };
+
+            var viewsElement = disagreementElement.Element("views");
+            if (viewsElement != null)
+            {
+                foreach (var viewElement in viewsElement.Elements("view"))
+                {
+                    var modelName = viewElement.Element("model")?.Value.Trim();
+                    var position = viewElement.Element("position")?.Value.Trim();
+
+                    if (!string.IsNullOrWhiteSpace(modelName) && !string.IsNullOrWhiteSpace(position))
+                    {
+                        disagreement.Views.Add(new DissentingView
+                        {
+                            ModelName = modelName,
+                            Position = position
+                        });
+                    }
+                }
+            }
+
+            if (disagreement.Views.Any())
+            {
+                disagreements.Add(disagreement);
+            }
+        }
+
         return disagreements;
     }
 }

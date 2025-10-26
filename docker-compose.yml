@@ -1,0 +1,18 @@
+
+services:
+  consensus:
+    image: ghcr.io/yetanotherchris/consensus:latest
+    container_name: consensus
+    ports:
+      - "8585:8080"
+    # Set an env var of CONSENSUS_APIKEY with your key value first.
+    environment:
+      - Consensus__ApiEndpoint=https://openrouter.ai/api/v1
+      - Consensus__ApiKey=${CONSENSUS__APIKEY}
+      - Consensus__Models__0=openai/gpt-4
+      - Consensus__Models__1=anthropic/claude-3-opus
+      - Consensus__Models__2=microsoft/phi-4
+      - Consensus__Models__3=google/gemini-2.5-flash
+    volumes:
+      - ./output:/app/output
+    restart: unless-stopped

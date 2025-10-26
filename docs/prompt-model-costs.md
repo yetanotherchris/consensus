@@ -1,9 +1,20 @@
 # Example prompt
 
-What are the top 5 prescribed drugs in the UK? 
-Factor in the typical length of time a single prescription lasts, e.g. 2 weeks supply. Factor in this and the number of prescriptions.
+This prompt should have a disagreement (by Microsoft Phi) with the top 5 list, where it thinks Paracetamol is in the list.
 
-Include information about drugs for mental health.
+```
+What are the top 5 prescribed drugs in the UK? 
+Factor in the typical length of time a single prescription lasts,  
+e.g. 2 weeks supply. Factor this in with the number of prescriptions given.
+
+Include information about drugs prescribed for mental health, and format using a numbered list.
+```
+
+**Another example**
+
+```
+Find research for links between paracetamol (acetaminophen) usage during pregnancy and autism. Decide which viewpoint has stronger evidence
+```
 
 # Model costs
 ## Cheap models

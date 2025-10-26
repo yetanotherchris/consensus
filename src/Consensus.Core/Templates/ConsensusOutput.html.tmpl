@@ -405,7 +405,7 @@
                     {{ if .HasViews }}
                     <ul style="margin-top: 10px; padding-left: 30px;">
                         {{ range .Views }}
-                        <li>{{ . }}</li>
+                        <li><strong>{{ .ModelName }}:</strong> {{ .Position }}</li>
                         {{ end }}
                     </ul>
                     {{ end }}

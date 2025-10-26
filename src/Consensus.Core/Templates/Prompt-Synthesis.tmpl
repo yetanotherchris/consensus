@@ -28,13 +28,47 @@ Your task:
 5. Assess overall confidence (consider both model confidence and agreement level)
 6. Note if disagreements reflect legitimate theoretical differences
 
-Format your response as:
-SYNTHESIZED ANSWER: [your synthesis]
-REASONING: [your reasoning]
-CONFIDENCE: [0-100]
-CONSENSUS LEVEL: [Strong/Moderate/Weak/Conflicted]
-AGREEMENT POINTS: [bullet list]
-DISAGREEMENTS: [description with analysis]
+Format your response using XML tags exactly as shown below:
 
-IMPORTANT: Also include a 2-sentence summary of the synthesized answer and key reasoning at the end of your response in XML tags:
-<summary>First sentence summarizing the synthesized answer. Second sentence covering the consensus level or key insight.</summary>
+<synthesis>
+  <synthesized_answer>
+    [Your synthesis - can be multiple paragraphs with markdown formatting]
+  </synthesized_answer>
+
+  <reasoning>
+    [Your reasoning for synthesis decisions - can be multiple paragraphs with markdown formatting]
+  </reasoning>
+
+  <confidence>[number from 0-100]</confidence>
+
+  <consensus_level>[exactly one of: Strong Consensus|Moderate Consensus|Weak Consensus|Conflicted]</consensus_level>
+
+  <agreement_points>
+    <point>First point of agreement</point>
+    <point>Second point of agreement</point>
+  </agreement_points>
+
+  <disagreements>
+    <!-- If there are disagreements, list each as shown below. Otherwise leave this section empty. -->
+    <disagreement>
+      <topic>Topic description</topic>
+      <views>
+        <view>
+          <model>Model name</model>
+          <position>Their position</position>
+        </view>
+        <view>
+          <model>Another model name</model>
+          <position>Their position</position>
+        </view>
+      </views>
+    </disagreement>
+  </disagreements>
+
+  <summary>First sentence summarizing the synthesized answer. Second sentence covering the consensus level or key insight.</summary>
+</synthesis>
+
+IMPORTANT:
+- Use proper XML formatting with opening and closing tags
+- The content inside tags can include markdown formatting
+- Do NOT add any text outside the <synthesis> tags
