@@ -1,53 +1,70 @@
-# Docker Web Deployment Guide
+# Docker Deployment Guide
 
-This guide covers building and deploying the combined Consensus Web + API Docker image.
+This guide covers building and running the Consensus application with Docker.
 
 ## Overview
 
-The `Dockerfile.web` creates a Docker image that includes:
+The default `Dockerfile` builds a production-ready image that includes:
 - React frontend (built with Vite)
 - ASP.NET Core Web API backend
-- The API serves the frontend from its `wwwroot` directory
+- The API serves the frontend from `wwwroot` on port 8080
 
 ## Quick Start
 
-### Local Build and Run
+### Build Locally
 
 ```bash
-# Build the image locally
-docker build -f Dockerfile.web -t consensus-web:latest .
+docker build -t consensus .
+```
 
-# Run the container
+### Run with Required Environment Variables
+
+```bash
+# Linux/macOS
 docker run -d \
   -p 8080:8080 \
   -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
   -e Consensus__ApiKey="your-api-key-here" \
   -v $(pwd)/output:/app/output \
-  --name consensus-web \
-  consensus-web:latest
+  --name consensus \
+  consensus
 
-# View logs
-docker logs -f consensus-web
-
-# Stop and remove
-docker stop consensus-web
-docker rm consensus-web
-```
-
-### Using PowerShell (Windows)
-
-```powershell
-# Build
-docker build -f Dockerfile.web -t consensus-web:latest .
-
-# Run
+# PowerShell (Windows)
 docker run -d `
   -p 8080:8080 `
   -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" `
   -e Consensus__ApiKey="your-api-key-here" `
   -v "${PWD}/output:/app/output" `
-  --name consensus-web `
-  consensus-web:latest
+  --name consensus `
+  consensus
+```
+
+### Access the Application
+
+Once running, the application is accessible at:
+- **Web Interface**: `http://localhost:8080`
+- **API Endpoints**: `http://localhost:8080/api/*`
+
+### Container Management
+
+```bash
+# View logs
+docker logs -f consensus
+
+# Stop container
+docker stop consensus
+
+# Start stopped container
+docker start consensus
+
+# Stop and remove container
+docker stop consensus && docker rm consensus
+
+# View running containers
+docker ps
+
+# Exec into container
+docker exec -it consensus /bin/bash
 ```
 
 ## Environment Variables
@@ -60,16 +77,120 @@ docker run -d `
 ### Optional
 
 - `Consensus__Domain` - Domain context for queries (default: `General`)
-- `Consensus__AgentTimeoutSeconds` - Timeout for AI agent responses (default: `120`)
+- `Consensus__AgentTimeoutSeconds` - Timeout for AI agent responses in seconds (default: `120`)
 - `Consensus__IncludeIndividualResponses` - Include individual model responses (default: `true`)
 - `OutputDirectory` - Directory for output files (default: `/app/output`)
-- `Consensus__Models` - JSON array of models to query (can also be in appsettings.json)
+
+### Passing Model Arrays
+
+To specify which AI models to query, you can pass an array of models using indexed environment variables:
+
+```bash
+# Linux/macOS
+docker run -d \
+  -p 8080:8080 \
+  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
+  -e Consensus__ApiKey="your-api-key" \
+  -e Consensus__Models__0="openai/gpt-4" \
+  -e Consensus__Models__1="anthropic/claude-3-opus" \
+  -e Consensus__Models__2="google/gemini-pro" \
+  -v $(pwd)/output:/app/output \
+  consensus
+
+# PowerShell (Windows)
+docker run -d `
+  -p 8080:8080 `
+  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" `
+  -e Consensus__ApiKey="your-api-key" `
+  -e Consensus__Models__0="openai/gpt-4" `
+  -e Consensus__Models__1="anthropic/claude-3-opus" `
+  -e Consensus__Models__2="google/gemini-pro" `
+  -v "${PWD}/output:/app/output" `
+  consensus
+```
+
+**Note**: ASP.NET Core configuration uses double underscores (`__`) as separators and array indices. Each model is specified with `Consensus__Models__<index>` where index starts at 0.
+
+### Using an Environment File
+
+For easier management, create a `.env` file:
+
+```env
+Consensus__ApiEndpoint=https://openrouter.ai/api/v1
+Consensus__ApiKey=your-api-key-here
+Consensus__Domain=General
+Consensus__AgentTimeoutSeconds=120
+Consensus__Models__0=openai/gpt-4
+Consensus__Models__1=anthropic/claude-3-opus
+Consensus__Models__2=google/gemini-pro
+```
+
+Then run with:
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  --env-file .env \
+  -v $(pwd)/output:/app/output \
+  --name consensus \
+  consensus
+```
+
+## Volume Mounts
+
+The `/app/output` directory contains generated files:
+- `/app/output/logs/` - Consensus run logs
+- `/app/output/responses/` - Markdown and HTML response files
+
+Mount this directory to persist outputs on the host:
+
+```bash
+-v $(pwd)/output:/app/output
+```
+
+Or specify a different host directory:
+
+```bash
+-v /path/to/your/output:/app/output
+```
 
 ## GitHub Container Registry
 
-### Automated Publishing
+### Pulling from GHCR
 
-The Docker image is automatically built and published to GitHub Container Registry (GHCR) when you push a version tag:
+Images are automatically published to GitHub Container Registry when you push version tags:
+
+```bash
+# Pull specific version
+docker pull ghcr.io/<your-username>/consensus:1.0.0
+
+# Pull latest
+docker pull ghcr.io/<your-username>/consensus:latest
+```
+
+### Running from GHCR
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
+  -e Consensus__ApiKey="your-api-key" \
+  -v $(pwd)/output:/app/output \
+  ghcr.io/<your-username>/consensus:latest
+```
+
+### Authenticating with GHCR
+
+For private images, authenticate first:
+
+```bash
+# Create a personal access token with read:packages scope
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-username> --password-stdin
+```
+
+### Publishing New Versions
+
+To trigger a new image build and publish:
 
 ```bash
 # Create and push a version tag
@@ -77,56 +198,31 @@ git tag v1.0.1
 git push origin v1.0.1
 ```
 
-This triggers the GitHub Actions workflow which:
-1. Builds the Docker image
-2. Publishes to `ghcr.io/<your-username>/consensus`
-3. Tags it with both the version number and `latest`
-
-### Pulling from GHCR
-
-```bash
-# Pull a specific version
-docker pull ghcr.io/<your-username>/consensus:1.0.1
-
-# Pull the latest version
-docker pull ghcr.io/<your-username>/consensus:latest
-
-# Run from GHCR
-docker run -d \
-  -p 8080:8080 \
-  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
-  -e Consensus__ApiKey="your-api-key-here" \
-  ghcr.io/<your-username>/consensus:latest
-```
-
-### Authentication
-
-To pull private images from GHCR, you need to authenticate:
-
-```bash
-# Create a personal access token (PAT) with read:packages scope
-# Then login to GHCR
-echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-```
+The GitHub Actions workflow will automatically:
+1. Build the Docker image
+2. Tag it with the version number and `latest`
+3. Push to `ghcr.io/<your-username>/consensus`
 
 ## Docker Compose
 
-Create a `docker-compose.web.yml` file:
+For more complex setups, create a `docker-compose.yml` file:
 
 ```yaml
 version: '3.8'
 
 services:
-  consensus-web:
-    image: ghcr.io/<your-username>/consensus:latest
+  consensus:
+    image: consensus:latest
+    # Or use GHCR: ghcr.io/<your-username>/consensus:latest
     ports:
       - "8080:8080"
     environment:
       - Consensus__ApiEndpoint=https://openrouter.ai/api/v1
       - Consensus__ApiKey=${CONSENSUS_API_KEY}
       - Consensus__Domain=General
-      - Consensus__AgentTimeoutSeconds=120
-      - Consensus__IncludeIndividualResponses=true
+      - Consensus__Models__0=openai/gpt-4
+      - Consensus__Models__1=anthropic/claude-3-opus
+      - Consensus__Models__2=google/gemini-pro
     volumes:
       - ./output:/app/output
     restart: unless-stopped
@@ -135,114 +231,27 @@ services:
 Run with:
 
 ```bash
-# Set your API key
+# Set API key
 export CONSENSUS_API_KEY="your-api-key-here"
 
 # Start
-docker-compose -f docker-compose.web.yml up -d
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
 
 # Stop
-docker-compose -f docker-compose.web.yml down
+docker-compose down
 ```
-
-## Accessing the Application
-
-Once the container is running, access the application at:
-
-- Web Interface: `http://localhost:8080`
-- API Endpoints: `http://localhost:8080/api/*`
-
-## Volume Mounts
-
-The `/app/output` directory contains:
-- `/app/output/logs/` - Consensus run logs
-- `/app/output/responses/` - Markdown and HTML response files
-
-Mount this directory to persist outputs:
-
-```bash
--v $(pwd)/output:/app/output
-```
-
-## Troubleshooting
-
-### Check container logs
-
-```bash
-docker logs consensus-web
-```
-
-### Exec into the container
-
-```bash
-docker exec -it consensus-web /bin/bash
-```
-
-### Verify environment variables
-
-```bash
-docker exec consensus-web env | grep Consensus
-```
-
-### Check output files
-
-```bash
-docker exec consensus-web ls -la /app/output/logs
-docker exec consensus-web ls -la /app/output/responses
-```
-
-## CI/CD Workflow Details
-
-The GitHub Actions workflow (`.github/workflows/docker-publish.yml`) runs on version tags and:
-
-1. Checks out the repository
-2. Sets up Docker Buildx for multi-platform builds
-3. Logs in to GHCR using `GITHUB_TOKEN`
-4. Extracts version from git tag (e.g., `v1.0.1` → `1.0.1`)
-5. Builds and pushes the image with two tags:
-   - Version tag: `ghcr.io/<repo>:1.0.1`
-   - Latest tag: `ghcr.io/<repo>:latest`
-6. Uses GitHub Actions cache for faster builds
-
-### Required Permissions
-
-The workflow needs these permissions (already configured):
-- `contents: read` - To checkout the repository
-- `packages: write` - To push to GHCR
-
-### Making Images Public
-
-By default, GHCR images are private. To make them public:
-
-1. Go to your GitHub profile → Packages
-2. Select the `consensus` package
-3. Click "Package settings"
-4. Scroll to "Danger Zone"
-5. Click "Change visibility" → "Public"
 
 ## Production Deployment
 
-For production deployments, consider:
+For production deployments, consider these best practices:
 
-1. **Use specific version tags** instead of `latest`
-2. **Set resource limits**:
-   ```bash
-   docker run --memory="2g" --cpus="2" ...
-   ```
-3. **Use secrets management** for API keys
-4. **Enable health checks**
-5. **Use a reverse proxy** (nginx, Traefik) for HTTPS
-6. **Monitor logs** and metrics
-
-## Example Production Deployment
+### Resource Limits
 
 ```bash
-# Pull specific version
-docker pull ghcr.io/<your-username>/consensus:1.0.1
-
-# Run with resource limits and restart policy
 docker run -d \
-  --name consensus-web \
   --memory="2g" \
   --cpus="2" \
   -p 8080:8080 \
@@ -250,15 +259,183 @@ docker run -d \
   -e Consensus__ApiKey="${API_KEY}" \
   -v /var/consensus/output:/app/output \
   --restart=unless-stopped \
+  --name consensus \
+  consensus
+```
+
+### Logging Configuration
+
+```bash
+docker run -d \
   --log-driver json-file \
   --log-opt max-size=10m \
   --log-opt max-file=3 \
+  -p 8080:8080 \
+  -e Consensus__ApiEndpoint="${API_ENDPOINT}" \
+  -e Consensus__ApiKey="${API_KEY}" \
+  consensus
+```
+
+### Health Checks
+
+Add a health check to your deployment:
+
+```yaml
+services:
+  consensus:
+    image: consensus:latest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+```
+
+### Using Specific Version Tags
+
+In production, always use specific version tags rather than `latest`:
+
+```bash
+docker pull ghcr.io/<your-username>/consensus:1.0.1
+docker run -d \
+  -p 8080:8080 \
+  -e Consensus__ApiEndpoint="${API_ENDPOINT}" \
+  -e Consensus__ApiKey="${API_KEY}" \
   ghcr.io/<your-username>/consensus:1.0.1
 ```
 
-## Next Steps
+## Troubleshooting
 
-1. Push a version tag to trigger the first build: `git tag v1.0.0 && git push origin v1.0.0`
-2. Wait for the GitHub Actions workflow to complete
-3. Pull and run the image from GHCR
-4. Configure your production environment
+### Check Container Logs
+
+```bash
+docker logs consensus
+docker logs --tail 100 consensus
+docker logs -f consensus  # Follow logs
+```
+
+### Verify Environment Variables
+
+```bash
+docker exec consensus env | grep Consensus
+```
+
+### Check Running Processes
+
+```bash
+docker exec consensus ps aux
+```
+
+### Inspect Container
+
+```bash
+docker inspect consensus
+```
+
+### Test Network Connectivity
+
+```bash
+docker exec consensus curl -I http://localhost:8080
+```
+
+### Check Output Files
+
+```bash
+docker exec consensus ls -la /app/output/logs
+docker exec consensus ls -la /app/output/responses
+```
+
+### Rebuild Without Cache
+
+If you encounter build issues:
+
+```bash
+docker build --no-cache -t consensus .
+```
+
+### Remove All Stopped Containers and Images
+
+```bash
+# Remove stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune
+
+# Remove everything
+docker system prune -a
+```
+
+## Common Issues
+
+### Port Already in Use
+
+If port 8080 is already in use, map to a different host port:
+
+```bash
+docker run -d -p 9000:8080 ... consensus
+```
+
+Then access at `http://localhost:9000`
+
+### Permission Denied on Volume Mount
+
+On Linux, you may need to adjust permissions:
+
+```bash
+mkdir -p output
+chmod 777 output
+docker run -v $(pwd)/output:/app/output ... consensus
+```
+
+### Container Exits Immediately
+
+Check logs for errors:
+
+```bash
+docker logs consensus
+```
+
+Common causes:
+- Missing required environment variables
+- Invalid API endpoint or key
+- Port conflict
+
+## Advanced Configuration
+
+### Custom appsettings.json
+
+Mount a custom configuration file:
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/appsettings.Production.json:/app/appsettings.Production.json \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  consensus
+```
+
+### Multiple Instances
+
+Run multiple instances on different ports:
+
+```bash
+# Instance 1
+docker run -d -p 8080:8080 --name consensus-1 consensus
+
+# Instance 2
+docker run -d -p 8081:8080 --name consensus-2 consensus
+
+# Instance 3
+docker run -d -p 8082:8080 --name consensus-3 consensus
+```
+
+### Network Configuration
+
+Create a custom network for multiple containers:
+
+```bash
+docker network create consensus-net
+docker run -d --network consensus-net --name consensus consensus
+```
