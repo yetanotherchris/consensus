@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consensus Analysis Report</title>
+    <title>Consensus for: {{ .ShortPrompt }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: #1a1a1a;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f7f7f8;
             padding: 20px;
             min-height: 100vh;
         }
@@ -28,12 +28,12 @@
             margin: 0 auto;
             background: white;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 0 3px rgba(0,0,0,0.4);
             overflow: hidden;
         }
         
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #002147 0%, #0a2f5c 100%);
             color: white;
             padding: 40px;
         }
@@ -84,22 +84,22 @@
         
         .section-title {
             font-size: 1.8em;
-            color: #667eea;
+            color: #002147;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #002147;
         }
         
         .answer-box {
             background: #f8f9fa;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #002147;
             padding: 25px;
             border-radius: 8px;
             margin-bottom: 30px;
         }
-        
+
         .answer-box h3 {
-            color: #667eea;
+            color: #002147;
             margin-bottom: 15px;
             font-size: 1.3em;
         }
@@ -117,11 +117,11 @@
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 6px;
-            border-left: 3px solid #764ba2;
+            border-left: 3px solid #0a2f5c;
         }
-        
+
         .citation-item strong {
-            color: #764ba2;
+            color: #0a2f5c;
         }
         
         .agreement-grid {
@@ -164,8 +164,8 @@
         }
         
         .model-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            border-color: #002147;
+            box-shadow: 0 5px 15px rgba(0, 33, 71, 0.2);
         }
         
         .model-header {
@@ -178,12 +178,12 @@
         
         .model-name {
             font-size: 1.4em;
-            color: #667eea;
+            color: #002147;
             font-weight: 600;
         }
-        
+
         .confidence-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #002147 0%, #0a2f5c 100%);
             color: white;
             padding: 8px 16px;
             border-radius: 20px;
@@ -205,7 +205,7 @@
         }
         
         .subsection h4 {
-            color: #764ba2;
+            color: #0a2f5c;
             margin-bottom: 12px;
             font-size: 1.1em;
         }
@@ -223,11 +223,18 @@
             margin-bottom: 8px;
         }
         
-        ul {
+        ul, ol {
             padding-left: 30px;
+        }
+
+        ul {
             list-style-type: disc;
         }
-        
+
+        ol {
+            list-style-type: decimal;
+        }
+
         li {
             margin-bottom: 8px;
         }
@@ -245,7 +252,7 @@
         }
         
         .expandable-toggle {
-            background: #667eea;
+            background: #002147;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -254,9 +261,9 @@
             font-size: 0.95em;
             transition: background 0.3s ease;
         }
-        
+
         .expandable-toggle:hover {
-            background: #5568d3;
+            background: #0a2f5c;
         }
         
         .expandable-content {
@@ -274,7 +281,7 @@
             padding: 20px;
             border-radius: 8px;
             margin-top: 15px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #002147;
         }
         
         .reasoning-box p {

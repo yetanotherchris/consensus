@@ -79,7 +79,7 @@ export function ResultViewer({ html, logs, runId, onReset }: ResultViewerProps) 
         </div>
       )}
 
-      <div className="flex-1 rounded-lg shadow-lg overflow-hidden">
+      <div className="flex-1 rounded-lg overflow-hidden">
         <iframe
           srcDoc={html}
           title="Consensus Result"

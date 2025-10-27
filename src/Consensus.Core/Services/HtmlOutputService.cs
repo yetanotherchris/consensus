@@ -105,10 +105,16 @@ public class HtmlOutputService : IHtmlOutputService
         
         // Convert agreement points to just the Point string
         var agreementPointsData = result.AgreementPoints.Select(p => p.Point).ToList();
-        
+
+        // Create a short version of the prompt for the title (max 50 chars with ellipsis)
+        var shortPrompt = result.OriginalPrompt.Length > 50
+            ? result.OriginalPrompt.Substring(0, 47) + "..."
+            : result.OriginalPrompt;
+
         var data = new
         {
-            Title = "Consensus Analysis Report",
+            Title = $"Consensus for: {shortPrompt}",
+            ShortPrompt = shortPrompt,
             GeneratedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             ModelsCount = result.IndividualResponses.Count,
             ProcessingTime = $"{result.TotalProcessingTime.TotalSeconds:F2}s",
