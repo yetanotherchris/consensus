@@ -64,14 +64,14 @@ public class ConsensusController : ControllerBase
         var jobStatus = await _jobScheduler.GetJobStatusAsync(runId);
         if (jobStatus == null)
         {
-            return NotFound(new { message = $"Run ID '{runId}' not found" });
+            return NotFound(new { message = $"ID '{runId}' not found" });
         }
 
         // Read HTML output file
         var html = await _outputFileService.ReadHtmlAsync(runId);
         if (html == null)
         {
-            return NotFound(new { message = $"HTML output not found for run ID '{runId}'. The job may still be running or may have failed." });
+            return NotFound(new { message = $"HTML output not found for ID '{runId}'. The job may still be running or may have failed." });
         }
 
         return Content(html, "text/html");
@@ -102,7 +102,7 @@ public class ConsensusController : ControllerBase
         
         if (!scheduled)
         {
-            return Conflict(new { message = $"Job with run ID '{runId}' already exists" });
+            return Conflict(new { message = $"Job with ID '{runId}' already exists" });
         }
 
         var jobStatus = await _jobScheduler.GetJobStatusAsync(runId);
@@ -126,14 +126,14 @@ public class ConsensusController : ControllerBase
         var jobStatus = await _jobScheduler.GetJobStatusAsync(runId);
         if (jobStatus == null)
         {
-            return NotFound(new { message = $"Run ID '{runId}' not found" });
+            return NotFound(new { message = $"ID '{runId}' not found" });
         }
 
         // Read markdown output file
         var markdown = await _outputFileService.ReadMarkdownAsync(runId);
         if (markdown == null)
         {
-            return NotFound(new { message = $"Markdown output not found for run ID '{runId}'. The job may still be running or may have failed." });
+            return NotFound(new { message = $"Markdown output not found for ID '{runId}'. The job may still be running or may have failed." });
         }
 
         return Content(markdown, "text/markdown");
@@ -154,7 +154,7 @@ public class ConsensusController : ControllerBase
         var jobStatus = await _jobScheduler.GetJobStatusAsync(runId);
         if (jobStatus == null)
         {
-            return NotFound(new { message = $"Run ID '{runId}' not found" });
+            return NotFound(new { message = $"ID '{runId}' not found" });
         }
 
         return Ok(jobStatus);

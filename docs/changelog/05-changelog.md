@@ -74,7 +74,7 @@ Output files follow the naming convention established by `FileOutputWriter`:
 - Markdown: `consensus-{runId}.md`
 
 ### Error Handling
-- Job not found: 404 with message "Run ID '{runId}' not found"
+- Job not found: 404 with message "ID '{runId}' not found"
 - File not found: 404 with message indicating output not found and job may still be running or failed
 - All file operations wrapped in try-catch with proper logging
 

@@ -1,9 +1,27 @@
 import type { PromptRequest, JobStatusModel, LogEntryModel } from '../types/api';
 
 // In production, use same origin (served from API). In development, use env variable or default.
-const API_BASE_URL = import.meta.env.PROD 
-  ? '' 
+const API_BASE_URL = import.meta.env.PROD
+  ? ''
   : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
+
+// Helper function to extract error message from response
+async function getErrorMessage(response: Response, defaultMessage: string): Promise<string> {
+  const contentType = response.headers.get('content-type');
+
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      const error = await response.json();
+      return error.message || error.title || defaultMessage;
+    } else {
+      const text = await response.text();
+      return text || defaultMessage;
+    }
+  } catch {
+    // If parsing fails, use default message
+    return defaultMessage;
+  }
+}
 
 class ConsensusApiService {
   private baseUrl: string;
@@ -17,7 +35,7 @@ class ConsensusApiService {
    */
   async startJob(prompt: string): Promise<JobStatusModel> {
     const request: PromptRequest = { prompt };
-    
+
     const response = await fetch(`${this.baseUrl}/api/consensus/start`, {
       method: 'POST',
       headers: {
@@ -27,8 +45,8 @@ class ConsensusApiService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to start job');
+      const message = await getErrorMessage(response, 'Failed to start job');
+      throw new Error(message);
     }
 
     return response.json();
@@ -41,8 +59,11 @@ class ConsensusApiService {
     const response = await fetch(`${this.baseUrl}/api/consensus/${runId}/status`);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get job status');
+      const message = await getErrorMessage(
+        response,
+        response.status === 404 ? 'Response not found' : 'Failed to get job status'
+      );
+      throw new Error(message);
     }
 
     return response.json();
@@ -55,8 +76,11 @@ class ConsensusApiService {
     const response = await fetch(`${this.baseUrl}/api/consensus/${runId}/logs`);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get logs');
+      const message = await getErrorMessage(
+        response,
+        response.status === 404 ? 'Response not found' : 'Failed to get logs'
+      );
+      throw new Error(message);
     }
 
     return response.json();
@@ -69,8 +93,11 @@ class ConsensusApiService {
     const response = await fetch(`${this.baseUrl}/api/consensus/${runId}/html`);
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to get HTML');
+      const message = await getErrorMessage(
+        response,
+        response.status === 404 ? 'Response not found' : 'Failed to get HTML'
+      );
+      throw new Error(message);
     }
 
     return response.text();

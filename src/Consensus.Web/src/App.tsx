@@ -6,6 +6,18 @@ import { Header } from './components/Header';
 import { consensusApi } from './services/api';
 import type { JobStatusModel, LogEntryModel } from './types/api';
 
+// Helper function to validate UUID format
+const isValidUuid = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
+// Helper function to get runId from URL path (/answer/{runId})
+const getRunIdFromUrl = (): string | null => {
+  const pathMatch = window.location.pathname.match(/\/answer\/([0-9a-f-]+)$/i);
+  return pathMatch && isValidUuid(pathMatch[1]) ? pathMatch[1] : null;
+};
+
 function App() {
   const [jobStatus, setJobStatus] = useState<JobStatusModel | null>(null);
   const [logs, setLogs] = useState<LogEntryModel[]>([]);
@@ -13,6 +25,67 @@ function App() {
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
+  const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
+
+  // Load response from URL path on mount
+  useEffect(() => {
+    const runIdFromUrl = getRunIdFromUrl();
+    if (!runIdFromUrl) {
+      return;
+    }
+
+    const loadFromUrl = async () => {
+      setIsLoadingFromUrl(true);
+      setError('');
+
+      try {
+        // Fetch job status
+        const status = await consensusApi.getJobStatus(runIdFromUrl);
+        setJobStatus(status);
+
+        // Fetch logs
+        const jobLogs = await consensusApi.getLogs(runIdFromUrl);
+        setLogs(jobLogs);
+
+        // If job is finished, fetch HTML
+        if (status.status === 2) {
+          const htmlResult = await consensusApi.getHtml(runIdFromUrl);
+          setHtml(htmlResult);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load response';
+        setError(errorMessage);
+        window.history.replaceState({}, '', '/'); // Update URL to home without adding history entry
+      } finally {
+        setIsLoadingFromUrl(false);
+      }
+    };
+
+    loadFromUrl();
+  }, []); // Run only on mount
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const runIdFromUrl = getRunIdFromUrl();
+
+      if (!runIdFromUrl) {
+        // User navigated back to home, reset the app
+        setJobStatus(null);
+        setLogs([]);
+        setHtml('');
+        setError('');
+        setIsSubmitting(false);
+        setCurrentPrompt('');
+      } else if (!jobStatus || jobStatus.runId !== runIdFromUrl) {
+        // User navigated to a different runId, reload
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [jobStatus]);
 
   // Poll for job status
   useEffect(() => {
@@ -25,10 +98,11 @@ function App() {
         const status = await consensusApi.getJobStatus(jobStatus.runId);
         setJobStatus(status);
 
-        // If job is finished, fetch the HTML result
+        // If job is finished, fetch the HTML result and update URL
         if (status.status === 2) { // Finished
           const htmlResult = await consensusApi.getHtml(status.runId);
           setHtml(htmlResult);
+          window.history.pushState({}, '', `/answer/${status.runId}`); // Update URL with runId
         }
       } catch (err) {
         console.error('Error polling job status:', err);
@@ -67,6 +141,7 @@ function App() {
     try {
       const status = await consensusApi.startJob(prompt);
       setJobStatus(status);
+      window.history.pushState({}, '', `/answer/${status.runId}`); // Update URL with new runId
 
       // Immediately fetch logs after starting the job
       const initialLogs = await consensusApi.getLogs(status.runId);
@@ -85,6 +160,7 @@ function App() {
     setError('');
     setIsSubmitting(false);
     setCurrentPrompt('');
+    window.history.pushState({}, '', '/'); // Navigate back to home
   };
 
   const isJobRunning = !!(jobStatus && jobStatus.status !== 2); // Not Finished
@@ -111,11 +187,11 @@ function App() {
 
           {/* Error Alert */}
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-              <span className="text-red-800">{error}</span>
-              <button 
+            <div className="w-full max-w-[700px] mx-auto p-4 bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-between">
+              <span className="text-gray-700">{error}</span>
+              <button
                 onClick={() => setError('')}
-                className="text-red-600 hover:text-red-800 font-bold cursor-pointer font-sans"
+                className="text-gray-500 hover:text-gray-700 font-bold cursor-pointer font-sans"
               >
                 ×
               </button>
@@ -142,9 +218,12 @@ function App() {
           )}
 
           {/* Loading State */}
-          {isSubmitting && (
-            <div className="flex justify-center py-8">
+          {(isSubmitting || isLoadingFromUrl) && (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              {isLoadingFromUrl && (
+                <p className="text-sm text-gray-600">Loading response...</p>
+              )}
             </div>
           )}
 
