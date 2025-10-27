@@ -117,6 +117,23 @@ public class ConsensusWebAppBuilder
         services.AddQuartz(q =>
         {
             q.UseInMemoryStore();
+
+            // Configure Output Cleanup Job if CleanupCrontab is specified
+            var cleanupCrontab = GetConfigValue("Consensus:CleanupCrontab") ?? "0 0/30 * * * ?"; // Default: every 30 minutes
+
+            if (!string.IsNullOrWhiteSpace(cleanupCrontab))
+            {
+                var cleanupJobKey = new JobKey("output-cleanup-job", "maintenance");
+                q.AddJob<Jobs.OutputCleanupJob>(opts => opts
+                    .WithIdentity(cleanupJobKey)
+                    .StoreDurably());
+
+                q.AddTrigger(opts => opts
+                    .ForJob(cleanupJobKey)
+                    .WithIdentity("output-cleanup-trigger", "maintenance")
+                    .WithCronSchedule(cleanupCrontab)
+                    .StartNow());
+            }
         });
 
         services.AddQuartzHostedService(options =>

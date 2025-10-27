@@ -9,6 +9,7 @@ services:
     environment:
       - Consensus__ApiEndpoint=https://openrouter.ai/api/v1
       - Consensus__ApiKey=${CONSENSUS__APIKEY}
+      - Consensus__CleanupCrontab="0 0/30 * * * ?" # delete output HTML, logs every 30 mins
       - Consensus__Models__0=anthropic/claude-haiku-4.5
       - Consensus__Models__1=x-ai/grok-3-mini
       - Consensus__Models__2=microsoft/phi-4
