@@ -99,9 +99,11 @@ public class ConsensusController : ControllerBase
 
         // Determine which models to use based on cheatcode
         string[] modelsToUse = _configuration.Models;
-        if (!string.IsNullOrWhiteSpace(cheatcode))
+
+        // Only check cheatcode if it's configured in appsettings
+        if (!string.IsNullOrWhiteSpace(_configuration.Cheatcode))
         {
-            if (!string.IsNullOrWhiteSpace(_configuration.Cheatcode) && cheatcode == _configuration.Cheatcode)
+            if (!string.IsNullOrWhiteSpace(cheatcode) && cheatcode == _configuration.Cheatcode)
             {
                 if (_configuration.CheatcodeModels != null && _configuration.CheatcodeModels.Length > 0)
                 {
@@ -109,7 +111,7 @@ public class ConsensusController : ControllerBase
                     _logger.LogInformation("Valid cheatcode provided, using cheatcode models");
                 }
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(cheatcode))
             {
                 _logger.LogWarning("Invalid cheatcode provided: {Cheatcode}", cheatcode);
             }
