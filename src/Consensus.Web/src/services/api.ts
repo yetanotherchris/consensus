@@ -33,10 +33,16 @@ class ConsensusApiService {
   /**
    * Start a new consensus job
    */
-  async startJob(prompt: string): Promise<JobStatusModel> {
+  async startJob(prompt: string, cheatcode?: string): Promise<JobStatusModel> {
     const request: PromptRequest = { prompt };
 
-    const response = await fetch(`${this.baseUrl}/api/consensus/start`, {
+    // Build URL with optional cheatcode query parameter
+    const url = new URL(`${this.baseUrl}/api/consensus/start`, window.location.origin);
+    if (cheatcode) {
+      url.searchParams.append('cheatcode', cheatcode);
+    }
+
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

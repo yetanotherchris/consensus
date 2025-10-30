@@ -28,26 +28,27 @@ public class QuartzJobScheduler : IJobScheduler
         _agentTimeoutSeconds = string.IsNullOrEmpty(timeoutValue) ? 120 : int.Parse(timeoutValue);
     }
 
-    public async Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, int delaySeconds = 5)
+    public async Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, string[] models, int delaySeconds = 5)
     {
         var scheduler = await _schedulerFactory.GetScheduler();
         var jobKey = new JobKey($"consensus-{runId}", "consensus-jobs");
-        
+
         // Check if job already exists
         if (await scheduler.CheckExists(jobKey))
         {
             _logger.LogWarning("Job with runId {RunId} already exists", runId);
             return false;
         }
-        
+
         var createdAt = DateTime.UtcNow;
         var jobDataMap = new JobDataMap
         {
             { "runId", runId },
             { "prompt", prompt },
-            { "createdAt", createdAt }
+            { "createdAt", createdAt },
+            { "models", models }
         };
-        
+
         var job = JobBuilder.Create<ConsensusJob>()
             .WithIdentity(jobKey)
             .UsingJobData(jobDataMap)
@@ -62,8 +63,9 @@ public class QuartzJobScheduler : IJobScheduler
 
         await scheduler.ScheduleJob(job, trigger);
 
-        _logger.LogInformation("Job scheduled for runId: {RunId}, will start in {DelaySeconds} seconds", runId, delaySeconds);
-        
+        _logger.LogInformation("Job scheduled for runId: {RunId}, will start in {DelaySeconds} seconds, models: {Models}",
+            runId, delaySeconds, string.Join(", ", models ?? Array.Empty<string>()));
+
         return true;
     }
 

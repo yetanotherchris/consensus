@@ -22,6 +22,16 @@ public class ConsensusConfiguration
     /// </summary>
     public string[] Models { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// Cheatcode to unlock alternative model set
+    /// </summary>
+    public string? Cheatcode { get; init; }
+
+    /// <summary>
+    /// Alternative set of AI models to use when cheatcode is provided
+    /// </summary>
+    public string[] CheatcodeModels { get; init; } = Array.Empty<string>();
+
     // Timeout and threshold configuration
     /// <summary>
     /// Timeout in seconds for each individual agent query

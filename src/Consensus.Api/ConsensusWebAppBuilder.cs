@@ -63,12 +63,18 @@ public class ConsensusWebAppBuilder
         // Read Models array from configuration
         var models = _configuration.GetSection("Consensus:Models").Get<string[]>() ?? Array.Empty<string>();
 
+        // Read Cheatcode configuration
+        var cheatcode = GetConfigValue("Consensus:Cheatcode", "CHEATCODE");
+        var cheatcodeModels = _configuration.GetSection("Consensus:Cheatcode_Models").Get<string[]>() ?? Array.Empty<string>();
+
         var consensusConfig = new ConsensusConfiguration
         {
             ApiEndpoint = apiEndpoint,
             ApiKey = apiKey,
             Domain = domain,
             Models = models,
+            Cheatcode = cheatcode,
+            CheatcodeModels = cheatcodeModels,
             AgentTimeoutSeconds = agentTimeoutSeconds,
             IncludeIndividualResponses = includeIndividualResponses
         };

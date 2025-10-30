@@ -12,9 +12,10 @@ public interface IJobScheduler
     /// </summary>
     /// <param name="runId">The run ID for this job</param>
     /// <param name="prompt">The prompt text to process</param>
+    /// <param name="models">The models to use for consensus building</param>
     /// <param name="delaySeconds">Delay in seconds before the job starts (default 5)</param>
     /// <returns>True if job was scheduled successfully, false if job already exists</returns>
-    Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, int delaySeconds = 5);
+    Task<bool> ScheduleConsensusJobAsync(string runId, string prompt, string[] models, int delaySeconds = 5);
     
     /// <summary>
     /// Get the status of a job from Quartz

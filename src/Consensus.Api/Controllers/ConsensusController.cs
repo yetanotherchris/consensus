@@ -1,6 +1,7 @@
 using Consensus.Api.Jobs.Scheduling;
 using Consensus.Api.Models;
 using Consensus.Api.Services;
+using Consensus.Configuration;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consensus.Api.Controllers;
@@ -16,17 +17,20 @@ public class ConsensusController : ControllerBase
     private readonly IOutputFileReaderService _outputFileService;
     private readonly ILogReader _logReader;
     private readonly ILogger<ConsensusController> _logger;
+    private readonly ConsensusConfiguration _configuration;
 
     public ConsensusController(
         IJobScheduler jobScheduler,
         IOutputFileReaderService outputFileService,
         ILogReader logReader,
-        ILogger<ConsensusController> logger)
+        ILogger<ConsensusController> logger,
+        ConsensusConfiguration configuration)
     {
         _jobScheduler = jobScheduler;
         _outputFileService = outputFileService;
         _logReader = logReader;
         _logger = logger;
+        _configuration = configuration;
     }
 
     /// <summary>
@@ -81,25 +85,45 @@ public class ConsensusController : ControllerBase
     /// Start a new consensus building job
     /// </summary>
     /// <param name="request">The prompt request containing the text to process</param>
+    /// <param name="cheatcode">Optional cheatcode to use alternative model set</param>
     /// <returns>Job status information</returns>
     [HttpPost("start")]
     [ProducesResponseType(typeof(JobStatusModel), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<JobStatusModel>> StartJob([FromBody] PromptRequest request)
+    public async Task<ActionResult<JobStatusModel>> StartJob([FromBody] PromptRequest request, [FromQuery] string? cheatcode = null)
     {
         if (string.IsNullOrWhiteSpace(request?.Prompt))
         {
             return BadRequest(new { message = "Prompt text is required" });
         }
 
+        // Determine which models to use based on cheatcode
+        string[] modelsToUse = _configuration.Models;
+        if (!string.IsNullOrWhiteSpace(cheatcode))
+        {
+            if (!string.IsNullOrWhiteSpace(_configuration.Cheatcode) && cheatcode == _configuration.Cheatcode)
+            {
+                if (_configuration.CheatcodeModels != null && _configuration.CheatcodeModels.Length > 0)
+                {
+                    modelsToUse = _configuration.CheatcodeModels;
+                    _logger.LogInformation("Valid cheatcode provided, using cheatcode models");
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Invalid cheatcode provided: {Cheatcode}", cheatcode);
+            }
+        }
+
         // Generate a unique run ID
         var runId = Guid.NewGuid().ToString();
-        
-        _logger.LogInformation("Starting job for runId: {RunId} with prompt: {Prompt}", runId, request.Prompt);
+
+        _logger.LogInformation("Starting job for runId: {RunId} with prompt: {Prompt}, models: {Models}",
+            runId, request.Prompt, string.Join(", ", modelsToUse));
 
         // Schedule the job with Quartz
-        var scheduled = await _jobScheduler.ScheduleConsensusJobAsync(runId, request.Prompt);
-        
+        var scheduled = await _jobScheduler.ScheduleConsensusJobAsync(runId, request.Prompt, modelsToUse);
+
         if (!scheduled)
         {
             return Conflict(new { message = $"Job with ID '{runId}' already exists" });

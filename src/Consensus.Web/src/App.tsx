@@ -139,7 +139,10 @@ function App() {
     setCurrentPrompt(prompt);
 
     try {
-      const status = await consensusApi.startJob(prompt);
+      // Get cheatcode from URL querystring if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const cheatcode = urlParams.get('cheatcode') || undefined;
+      const status = await consensusApi.startJob(prompt, cheatcode);
       setJobStatus(status);
       window.history.pushState({}, '', `/answer/${status.runId}`); // Update URL with new runId
 
