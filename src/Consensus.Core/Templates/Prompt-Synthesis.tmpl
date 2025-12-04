@@ -31,44 +31,46 @@ Your task:
 Format your response using XML tags exactly as shown below:
 
 <synthesis>
-  <synthesized_answer>
-    [Your synthesis - can be multiple paragraphs with markdown formatting]
-  </synthesized_answer>
+  <synthesized_answer><![CDATA[
+    [Your synthesis - can be multiple paragraphs with markdown formatting including links, code, etc.]
+  ]]></synthesized_answer>
 
-  <reasoning>
+  <reasoning><![CDATA[
     [Your reasoning for synthesis decisions - can be multiple paragraphs with markdown formatting]
-  </reasoning>
+  ]]></reasoning>
 
   <confidence>[number from 0-100]</confidence>
 
   <consensus_level>[exactly one of: Strong Consensus|Moderate Consensus|Weak Consensus|Conflicted]</consensus_level>
 
   <agreement_points>
-    <point>First point of agreement</point>
-    <point>Second point of agreement</point>
+    <point><![CDATA[First point of agreement]]></point>
+    <point><![CDATA[Second point of agreement]]></point>
   </agreement_points>
 
   <disagreements>
     <!-- If there are disagreements, list each as shown below. Otherwise leave this section empty. -->
     <disagreement>
-      <topic>Topic description</topic>
+      <topic><![CDATA[Topic description]]></topic>
       <views>
         <view>
           <model>Model name</model>
-          <position>Their position</position>
+          <position><![CDATA[Their position]]></position>
         </view>
         <view>
           <model>Another model name</model>
-          <position>Their position</position>
+          <position><![CDATA[Their position]]></position>
         </view>
       </views>
     </disagreement>
   </disagreements>
 
-  <summary>First sentence summarizing the synthesized answer. Second sentence covering the consensus level or key insight.</summary>
+  <summary><![CDATA[First sentence summarizing the synthesized answer. Second sentence covering the consensus level or key insight.]]></summary>
 </synthesis>
 
 IMPORTANT:
 - Use proper XML formatting with opening and closing tags
-- The content inside tags can include markdown formatting
+- Wrap ALL content that may contain special characters (&, <, >, ", ') in CDATA sections: <![CDATA[content here]]>
+- CDATA allows markdown formatting including links with & characters without escaping
 - Do NOT add any text outside the <synthesis> tags
+- Example: <point><![CDATA[Studies show 30-50% comorbidity (Smith & Jones, 2020)]]></point>

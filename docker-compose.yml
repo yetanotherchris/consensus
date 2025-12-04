@@ -1,22 +1,27 @@
 
+#docker compose --env-file .env up -d
+
 services:
   consensus:
-    image: ghcr.io/yetanotherchris/consensus:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: consensus:latest
     container_name: consensus
     ports:
       - "8585:8080"
     # Set an env var of CONSENSUS_APIKEY with your key value first.
     environment:
-      - Consensus__ApiEndpoint=https://openrouter.ai/api/v1
-      - Consensus__ApiKey=${CONSENSUS__APIKEY}
-      - Consensus__CleanupCrontab="0 0/30 * * * ?" # delete output HTML, logs every 30 mins
-      - Consensus__Models__0=anthropic/claude-haiku-4.5
-      - Consensus__Models__1=x-ai/grok-3-mini
-      - Consensus__Models__2=microsoft/phi-4
-      - Consensus__Models__3=google/gemini-2.5-flash
-      - Consensus__Models__4=qwen/qwen-2.5-72b-instruct
-      - Consensus__Models__5=deepseek/deepseek-chat-v3.1
-      - Consensus__Models__6=openai/gpt-4o-mini
+      - Consensus__ApiEndpoint=${Consensus__ApiEndpoint}
+      - Consensus__ApiKey=${Consensus__ApiKey}
+      - Consensus__CleanupCrontab=${Consensus__CleanupCrontab}
+      - Consensus__Models__0=${Consensus__Models__0}
+      - Consensus__Models__1=${Consensus__Models__1}
+      - Consensus__Models__2=${Consensus__Models__2}
+      - Consensus__Models__3=${Consensus__Models__3}
+      - Consensus__Models__4=${Consensus__Models__4}
+      - Consensus__Models__5=${Consensus__Models__5}
+      - Consensus__Models__6=${Consensus__Models__6}
     volumes:
       - ./output:/app/output
     restart: unless-stopped

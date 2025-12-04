@@ -55,6 +55,22 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Register IIntermediateResponsePersistence for saving/loading model responses
+    /// </summary>
+    public static IServiceCollection AddIntermediateResponsePersistence(
+        this IServiceCollection services,
+        string outputDirectory)
+    {
+        services.AddTransient<IIntermediateResponsePersistence>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<IntermediateResponsePersistence>>();
+            return new IntermediateResponsePersistence(logger, outputDirectory);
+        });
+
+        return services;
+    }
+
+    /// <summary>
     /// Register SimpleFileLogger as a singleton with a specific log file path
     /// </summary>
     public static IServiceCollection AddSimpleFileLogger(

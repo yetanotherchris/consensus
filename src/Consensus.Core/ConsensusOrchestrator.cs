@@ -20,6 +20,7 @@ public class ConsensusOrchestrator
     private readonly ISynthesizerService _synthesizerService;
     private readonly IMarkdownOutputService _markdownOutputService;
     private readonly IHtmlOutputService _htmlOutputService;
+    private readonly IIntermediateResponsePersistence _responsePersistence;
 
     public ConsensusOrchestrator(
         ConsensusConfiguration config,
@@ -28,7 +29,8 @@ public class ConsensusOrchestrator
         IPromptBuilder promptBuilder,
         ISynthesizerService synthesizerService,
         IMarkdownOutputService markdownOutputService,
-        IHtmlOutputService htmlOutputService)
+        IHtmlOutputService htmlOutputService,
+        IIntermediateResponsePersistence responsePersistence)
     {
         _config = config;
         _runTracker = runTracker;
@@ -37,6 +39,7 @@ public class ConsensusOrchestrator
         _synthesizerService = synthesizerService;
         _markdownOutputService = markdownOutputService;
         _htmlOutputService = htmlOutputService;
+        _responsePersistence = responsePersistence;
     }
 
     /// <summary>
@@ -90,11 +93,64 @@ public class ConsensusOrchestrator
 
         _runTracker.WriteLog(runId, $"✓ Collected {responses.Count} responses (minimum: {minimumAgentsRequired})");
 
-        // Phase 2: Convergent Synthesis
+        // Save responses to disk before synthesis
+        _runTracker.WriteLog(runId, "Saving individual responses to disk...");
+        await _responsePersistence.SaveResponsesAsync(runId, responses);
+        _runTracker.WriteLog(runId, $"✓ Saved {responses.Count} responses to output/responses/{runId}/");
+
+        // Phase 2: Convergent Synthesis with retry logic
         _runTracker.WriteLog(runId, "=== PHASE 2: CONVERGENT SYNTHESIS ===");
-        using var synthesisCts = new CancellationTokenSource(TimeSpan.FromSeconds(_config.AgentTimeoutSeconds * 2));
         string judgeModel = models[0];
-        var result = await _synthesizerService.SynthesizeAsync(prompt, responses, judgeModel, runId, synthesisCts.Token);
+
+        const int maxSynthesisAttempts = 3;
+        int judgeTimeoutSeconds = _config.AgentTimeoutSeconds * 4;
+        ConsensusResult? result = null;
+        Exception? lastException = null;
+
+        for (int attempt = 1; attempt <= maxSynthesisAttempts; attempt++)
+        {
+            try
+            {
+                _runTracker.WriteLog(runId, $"Synthesis attempt {attempt}/{maxSynthesisAttempts} (timeout: {judgeTimeoutSeconds}s)");
+
+                using var synthesisCts = new CancellationTokenSource(TimeSpan.FromSeconds(judgeTimeoutSeconds));
+                var synthesisStopwatch = Stopwatch.StartNew();
+
+                result = await _synthesizerService.SynthesizeAsync(prompt, responses, judgeModel, runId, synthesisCts.Token);
+
+                synthesisStopwatch.Stop();
+                _runTracker.WriteLog(runId, $"✓ Synthesis completed in {synthesisStopwatch.Elapsed.TotalSeconds:F2}s");
+                break;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                _runTracker.WriteLog(runId, $"✗ Synthesis attempt {attempt} failed: {ex.Message}");
+
+                if (attempt < maxSynthesisAttempts)
+                {
+                    _runTracker.WriteLog(runId, $"Reloading responses from disk for retry...");
+                    responses = await _responsePersistence.LoadResponsesAsync(runId);
+
+                    if (responses.Count == 0)
+                    {
+                        throw new InvalidOperationException("Failed to reload responses from disk", ex);
+                    }
+
+                    _runTracker.WriteLog(runId, $"✓ Reloaded {responses.Count} responses, retrying synthesis...");
+                }
+                else
+                {
+                    _runTracker.WriteLog(runId, $"✗ All {maxSynthesisAttempts} synthesis attempts failed");
+                    throw new InvalidOperationException($"Synthesis failed after {maxSynthesisAttempts} attempts", lastException);
+                }
+            }
+        }
+
+        if (result == null)
+        {
+            throw new InvalidOperationException("Synthesis failed to produce a result", lastException);
+        }
 
         stopwatch.Stop();
         result.TotalProcessingTime = stopwatch.Elapsed;

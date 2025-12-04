@@ -16,16 +16,20 @@ Include information about drugs prescribed for mental health, and format using a
 Find research for links between paracetamol (acetaminophen) usage during pregnancy and autism. Decide which viewpoint has stronger evidence
 ```
 
+```
+Who would win a fight, a crocodile or a bear?
+```
+
 # Model costs
 ## Cheap models
 
 ```
-"anthropic/claude-haiku-4.5",
-"microsoft/phi-4",
-"x-ai/grok-3-mini",
-"google/gemini-2.5-flash",
-"deepseek/deepseek-chat-v3.1",
-"qwen/qwen-2.5-72b-instruct"
+- Consensus__Models__0=anthropic/claude-haiku-4.5,
+- Consensus__Models__1=microsoft/phi-4,
+- Consensus__Models__2=x-ai/grok-3-mini,
+- Consensus__Models__3=google/gemini-2.5-flash,
+- Consensus__Models__4=deepseek/deepseek-chat-v3.1,
+- Consensus__Models__5=qwen/qwen-2.5-72b-instruct
 ```  
 
 | Model | Input Cost | Output Cost | Total Cost |
@@ -49,12 +53,12 @@ Find research for links between paracetamol (acetaminophen) usage during pregnan
 Here's the cost breakdown for these premium models:
 
 ```
-"anthropic/claude-sonnet-4.5",
-"x-ai/grok-4",
-"deepseek/deepseek-chat-v3.1",
-"microsoft/phi-4",
-"google/gemini-2.5-pro",
-"openai/gpt-5"
+- Consensus__Models__0=anthropic/claude-sonnet-4.5,
+- Consensus__Models__1=x-ai/grok-4,
+- Consensus__Models__2=deepseek/deepseek-chat-v3.1,
+- Consensus__Models__3=microsoft/phi-4,
+- Consensus__Models__4=google/gemini-3-pro-preview,
+- Consensus__Models__5=openai/gpt-5
 ```
 
 | Model | Input Cost | Output Cost | Total Cost |

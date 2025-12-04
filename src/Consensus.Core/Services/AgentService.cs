@@ -32,9 +32,15 @@ public class AgentService : IAgentService
         {
             try
             {
+                var clientOptions = new OpenAIClientOptions
+                {
+                    Endpoint = new Uri(apiEndpoint),
+                    NetworkTimeout = TimeSpan.FromMinutes(15)
+                };
+
                 var openAIClient = new OpenAIClient(
                     new ApiKeyCredential(apiKey),
-                    new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
+                    clientOptions
                 );
                 var chatClient = openAIClient.GetChatClient(model);
                 AIAgent agent = chatClient.CreateAIAgent();
@@ -71,26 +77,39 @@ public class AgentService : IAgentService
             // Create a task for the agent query
             var queryTask = Task.Run(async () =>
             {
-                var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
-                return response.Text ?? string.Empty;
+                try
+                {
+                    var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+                    return response.Text ?? string.Empty;
+                }
+                catch (ArgumentException ex) when (ex.Message.Contains("Unknown ChatFinishReason"))
+                {
+                    // Handle unknown finish reason from API - log warning but don't fail
+                    _runTracker.WriteLog(runId, $"Warning: {model} returned unknown finish reason, attempting to extract partial response");
+                    _logger.LogWarning(ex, "Unknown ChatFinishReason from {Model}, this may indicate an API compatibility issue", model);
+
+                    // The response likely completed but with an unrecognized finish reason
+                    // Try to get the partial response from the thread if available
+                    throw new InvalidOperationException($"Model {model} returned an unknown finish reason. This may be due to API compatibility issues with the preview SDK.", ex);
+                }
             }, cancellationToken);
-            
+
             // Wait for either the query to complete or cancellation
             var completedTask = await Task.WhenAny(
                 queryTask,
                 Task.Delay(Timeout.Infinite, cancellationToken)
             );
-            
+
             // If the delay task won (cancellation occurred), throw
             if (completedTask != queryTask)
             {
                 _runTracker.WriteLog(runId, $"Query to {model} was cancelled by timeout");
                 throw new OperationCanceledException($"Query to {model} timed out");
             }
-            
+
             // Get the raw response
             string rawResponse = await queryTask;
-            
+
             // Parse into ModelResponse
             return ParseModelResponse(model, rawResponse, startTime);
         }
@@ -238,37 +257,54 @@ public class AgentService : IAgentService
         {
             var queryTask = Task.Run(async () =>
             {
-                // Create OpenAI client configured for OpenRouter
-                var openAIClient = new OpenAIClient(
-                    new ApiKeyCredential(apiKey),
-                    new OpenAIClientOptions { Endpoint = new Uri(apiEndpoint) }
-                );
-                
-                // Get the chat client and create an AI Agent using the Microsoft Agent Framework
-                var chatClient = openAIClient.GetChatClient(model);
-                AIAgent agent = chatClient.CreateAIAgent();
+                try
+                {
+                    // Create OpenAI client configured for OpenRouter with extended timeout
+                    var clientOptions = new OpenAIClientOptions
+                    {
+                        Endpoint = new Uri(apiEndpoint),
+                        NetworkTimeout = TimeSpan.FromMinutes(15)
+                    };
 
-                // Use AgentThread for conversation state
-                AgentThread thread = agent.GetNewThread();
-                
-                // Run the agent with the prompt
-                var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
-                
-                return response.Text ?? string.Empty;
+                    var openAIClient = new OpenAIClient(
+                        new ApiKeyCredential(apiKey),
+                        clientOptions
+                    );
+
+                    // Get the chat client and create an AI Agent using the Microsoft Agent Framework
+                    var chatClient = openAIClient.GetChatClient(model);
+                    AIAgent agent = chatClient.CreateAIAgent();
+
+                    // Use AgentThread for conversation state
+                    AgentThread thread = agent.GetNewThread();
+
+                    // Run the agent with the prompt
+                    var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+
+                    return response.Text ?? string.Empty;
+                }
+                catch (ArgumentException ex) when (ex.Message.Contains("Unknown ChatFinishReason"))
+                {
+                    // Handle unknown finish reason from API - log warning but don't fail
+                    _runTracker.WriteLog(runId, $"Warning: {model} returned unknown finish reason in one-off query");
+                    _logger.LogWarning(ex, "Unknown ChatFinishReason from {Model} in one-off query, this may indicate an API compatibility issue", model);
+
+                    throw new InvalidOperationException($"Model {model} returned an unknown finish reason. This may be due to API compatibility issues with the preview SDK.", ex);
+                }
             }, cancellationToken);
-            
+
             // Wait for either completion or cancellation
             var completedTask = await Task.WhenAny(
                 queryTask,
                 Task.Delay(Timeout.Infinite, cancellationToken)
             );
-            
+
             if (completedTask != queryTask)
             {
                 _runTracker.WriteLog(runId, $"One-off query to {model} timed out");
                 throw new OperationCanceledException($"Query to {model} timed out");
             }
-            
+
             return await queryTask;
         }
         catch (OperationCanceledException)

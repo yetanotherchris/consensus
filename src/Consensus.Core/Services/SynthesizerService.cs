@@ -33,8 +33,8 @@ public class SynthesizerService : ISynthesizerService
     }
 
     public async Task<ConsensusResult> SynthesizeAsync(
-        string originalPrompt, 
-        List<ModelResponse> responses, 
+        string originalPrompt,
+        List<ModelResponse> responses,
         string judgeModel,
         string runId,
         CancellationToken cancellationToken = default)
@@ -46,8 +46,11 @@ public class SynthesizerService : ISynthesizerService
             // Build the judge prompt
             string judgePrompt = _promptBuilder.BuildJudgeSynthesisPrompt(originalPrompt, responses);
 
-            // Query the judge model
+            // Query the judge model with progress logging
             _runTracker.WriteLog(runId, $"Using {judgeModel} as synthesis judge...");
+
+            var progressStopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var progressLoggingTask = LogSynthesisProgressAsync(runId, progressStopwatch, cancellationToken);
 
             string synthesisResponse = await _agentService.QueryModelOneOffAsync(
                 judgeModel,
@@ -57,17 +60,41 @@ public class SynthesizerService : ISynthesizerService
                 runId,
                 cancellationToken);
 
+            progressStopwatch.Stop();
+
             // Parse the synthesis response
             var result = ParseSynthesisResponse(synthesisResponse, responses, originalPrompt, runId);
-            
+
             _runTracker.WriteLog(runId, $"Synthesis complete. Consensus level: {result.ConsensusLevel}");
-            
+
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during synthesis for runId {RunId}", runId);
             throw;
+        }
+    }
+
+    private async Task LogSynthesisProgressAsync(string runId, System.Diagnostics.Stopwatch stopwatch, CancellationToken cancellationToken)
+    {
+        try
+        {
+            const int logIntervalSeconds = 15;
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(logIntervalSeconds), cancellationToken);
+                var elapsed = stopwatch.Elapsed;
+                _runTracker.WriteLog(runId, $"Synthesis in progress... elapsed: {elapsed.TotalSeconds:F0}s");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error in synthesis progress logging for runId {RunId}", runId);
         }
     }
 
@@ -115,6 +142,77 @@ public class SynthesizerService : ISynthesizerService
         }
 
         return result;
+    }
+
+    private List<ConsensusPoint> ParseXmlAgreementPoints(XElement? agreementPointsElement)
+    {
+        var points = new List<ConsensusPoint>();
+
+        if (agreementPointsElement == null)
+            return points;
+
+        foreach (var pointElement in agreementPointsElement.Elements("point"))
+        {
+            var pointText = pointElement.Value.Trim();
+            if (!string.IsNullOrWhiteSpace(pointText))
+            {
+                points.Add(new ConsensusPoint
+                {
+                    Point = pointText,
+                    SupportingModels = 0,
+                    ModelNames = new List<string>()
+                });
+            }
+        }
+
+        return points;
+    }
+
+    private List<Disagreement> ParseXmlDisagreements(XElement? disagreementsElement)
+    {
+        var disagreements = new List<Disagreement>();
+
+        if (disagreementsElement == null)
+            return disagreements;
+
+        foreach (var disagreementElement in disagreementsElement.Elements("disagreement"))
+        {
+            var topic = disagreementElement.Element("topic")?.Value.Trim();
+            if (string.IsNullOrWhiteSpace(topic))
+                continue;
+
+            var disagreement = new Disagreement
+            {
+                Topic = topic,
+                Views = new List<DissentingView>()
+            };
+
+            var viewsElement = disagreementElement.Element("views");
+            if (viewsElement != null)
+            {
+                foreach (var viewElement in viewsElement.Elements("view"))
+                {
+                    var modelName = viewElement.Element("model")?.Value.Trim();
+                    var position = viewElement.Element("position")?.Value.Trim();
+
+                    if (!string.IsNullOrWhiteSpace(modelName) && !string.IsNullOrWhiteSpace(position))
+                    {
+                        disagreement.Views.Add(new DissentingView
+                        {
+                            ModelName = modelName,
+                            Position = position
+                        });
+                    }
+                }
+            }
+
+            if (disagreement.Views.Any())
+            {
+                disagreements.Add(disagreement);
+            }
+        }
+
+        return disagreements;
     }
 
     private ConsensusResult ParseTextSynthesisResponse(string synthesisResponse, List<ModelResponse> originalResponses, string originalPrompt, string runId)
@@ -304,74 +402,4 @@ public class SynthesizerService : ISynthesizerService
         return disagreements;
     }
 
-    private List<ConsensusPoint> ParseXmlAgreementPoints(XElement? agreementPointsElement)
-    {
-        var points = new List<ConsensusPoint>();
-
-        if (agreementPointsElement == null)
-            return points;
-
-        foreach (var pointElement in agreementPointsElement.Elements("point"))
-        {
-            var pointText = pointElement.Value.Trim();
-            if (!string.IsNullOrWhiteSpace(pointText))
-            {
-                points.Add(new ConsensusPoint
-                {
-                    Point = pointText,
-                    SupportingModels = 0,
-                    ModelNames = new List<string>()
-                });
-            }
-        }
-
-        return points;
-    }
-
-    private List<Disagreement> ParseXmlDisagreements(XElement? disagreementsElement)
-    {
-        var disagreements = new List<Disagreement>();
-
-        if (disagreementsElement == null)
-            return disagreements;
-
-        foreach (var disagreementElement in disagreementsElement.Elements("disagreement"))
-        {
-            var topic = disagreementElement.Element("topic")?.Value.Trim();
-            if (string.IsNullOrWhiteSpace(topic))
-                continue;
-
-            var disagreement = new Disagreement
-            {
-                Topic = topic,
-                Views = new List<DissentingView>()
-            };
-
-            var viewsElement = disagreementElement.Element("views");
-            if (viewsElement != null)
-            {
-                foreach (var viewElement in viewsElement.Elements("view"))
-                {
-                    var modelName = viewElement.Element("model")?.Value.Trim();
-                    var position = viewElement.Element("position")?.Value.Trim();
-
-                    if (!string.IsNullOrWhiteSpace(modelName) && !string.IsNullOrWhiteSpace(position))
-                    {
-                        disagreement.Views.Add(new DissentingView
-                        {
-                            ModelName = modelName,
-                            Position = position
-                        });
-                    }
-                }
-            }
-
-            if (disagreement.Views.Any())
-            {
-                disagreements.Add(disagreement);
-            }
-        }
-
-        return disagreements;
-    }
 }

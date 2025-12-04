@@ -63,7 +63,8 @@ class Program
                 var services = new ServiceCollection();
                 services.AddConsensus(config)
                         .AddSimpleFileLogger(outputDir, settings.OutputFilenamesId)
-                        .AddFileOutputWriter(outputDir, settings.OutputFilenamesId);
+                        .AddFileOutputWriter(outputDir, settings.OutputFilenamesId)
+                        .AddIntermediateResponsePersistence(outputDir);
                 var serviceProvider = services.BuildServiceProvider();
 
                 // Get logger for Program

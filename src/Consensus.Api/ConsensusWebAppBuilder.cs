@@ -94,7 +94,8 @@ public class ConsensusWebAppBuilder
         // Add consensus services with configurable log directory
         services.AddConsensus(consensusConfig, logDirectory)
                 .AddSimpleFileLogger(outputDirectory)
-                .AddFileOutputWriter(outputDirectory);
+                .AddFileOutputWriter(outputDirectory)
+                .AddIntermediateResponsePersistence(outputDirectory);
 
         services.AddSingleton<IJobScheduler, QuartzJobScheduler>();
         services.AddSingleton<Api.Services.IOutputFileReaderService>(sp => 
