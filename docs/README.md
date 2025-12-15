@@ -29,6 +29,8 @@ Now go to http://localhost:8585/
 
 Or use Docker compose:
 
+`docker compose --env-file .env up -d`
+
 ```
 services:
   consensus:
