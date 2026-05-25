@@ -1,6 +1,6 @@
 ---
 name: consensus-review
-description: Orchestrates a multi-model panel review using the prompt templates from this Consensus repository. Sends structured divergent prompts to @grok-subagent, @gemini-subagent, @claude-subagent, and @gpt-subagent, then synthesizes their responses and renders output in the Consensus markdown format. Use when a user asks for a deep review, multi-perspective analysis, or panel evaluation of any document or code.
+description: Orchestrates a multi-model panel review using the prompt templates from this Consensus repository. Discovers all agents prefixed with "consensus-subagent-" from opencode.jsonc, sends structured divergent prompts to each, synthesizes their responses, and renders output in the Consensus markdown format. Use when a user asks for a deep review, multi-perspective analysis, or panel evaluation of any document or code.
 model: openrouter/anthropic/claude-opus-4.7
 license: MIT
 compatibility: opencode
@@ -12,17 +12,23 @@ You are the synthesis judge. Work through the steps below in order. Do not skip 
 
 ---
 
-## Required: opencode.jsonc agent configuration
+## Step 1 — Discover panel agents
 
-The four panel agents must exist in `opencode.jsonc` before this skill can run. If they are missing, show the user this block and ask them to add it, then stop.
+Read `opencode.jsonc` from the project root (or user-level config if no project-level file exists). Collect every key under `"agent"` whose name starts with `consensus-subagent-`. These are your panel members.
+
+For each discovered agent, record:
+- **Agent key** — the full key name (e.g. `consensus-subagent-grok`)
+- **Model** — the value of its `"model"` field (e.g. `openrouter/x-ai/grok-4.3`) — used as the display name in the report
+
+If no `consensus-subagent-*` agents are found, show the user this example configuration and ask them to add at least two agents, then stop:
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  // "shell": "pwsh",   // Windows only — omit this line on macOS/Linux (defaults to your system shell)
+  // "shell": "pwsh",  // Windows only — omit on macOS/Linux
   "agent": {
-    "grok-subagent": {
-      "description": "Grok LLM subagent for analysis and queries",
+    "consensus-subagent-grok": {
+      "description": "Grok panel member for consensus reviews",
       "mode": "subagent",
       "model": "openrouter/x-ai/grok-4.3",
       "permission": {
@@ -31,8 +37,8 @@ The four panel agents must exist in `opencode.jsonc` before this skill can run. 
         "edit": "deny"
       }
     },
-    "gemini-subagent": {
-      "description": "Gemini LLM subagent for analysis and queries",
+    "consensus-subagent-gemini": {
+      "description": "Gemini panel member for consensus reviews",
       "mode": "subagent",
       "model": "openrouter/google/gemini-3.1-pro-preview",
       "permission": {
@@ -41,8 +47,8 @@ The four panel agents must exist in `opencode.jsonc` before this skill can run. 
         "edit": "deny"
       }
     },
-    "claude-subagent": {
-      "description": "Claude LLM subagent for analysis and queries",
+    "consensus-subagent-claude": {
+      "description": "Claude panel member for consensus reviews",
       "mode": "subagent",
       "model": "openrouter/anthropic/claude-sonnet-4.6",
       "permission": {
@@ -51,8 +57,8 @@ The four panel agents must exist in `opencode.jsonc` before this skill can run. 
         "edit": "deny"
       }
     },
-    "gpt-subagent": {
-      "description": "GPT LLM subagent for analysis and queries",
+    "consensus-subagent-gpt": {
+      "description": "GPT panel member for consensus reviews",
       "mode": "subagent",
       "model": "openrouter/openai/gpt-5.5",
       "permission": {
@@ -65,9 +71,11 @@ The four panel agents must exist in `opencode.jsonc` before this skill can run. 
 }
 ```
 
+The prefix `consensus-subagent-` is the only requirement. Users can add, remove, or swap any models freely.
+
 ---
 
-## Step 1 — Identify the target
+## Step 2 — Identify the target
 
 Read the document, code, or content to review from the conversation context. If a file path was mentioned, read it. If the content was pasted inline, use it directly.
 
@@ -77,9 +85,9 @@ Hold the full content as `TARGET`.
 
 ---
 
-## Step 2 — Send the divergent prompt to all four agents
+## Step 3 — Send the divergent prompt to all panel agents
 
-Invoke `@grok-subagent`, `@gemini-subagent`, `@claude-subagent`, and `@gpt-subagent` — call all four before reading any response. Send each agent this prompt exactly, substituting `TARGET`:
+Invoke every discovered `consensus-subagent-*` agent — call all of them before reading any response. Send each agent this prompt exactly, substituting `TARGET`:
 
 ```
 Original Question:
@@ -110,9 +118,9 @@ IMPORTANT: Also include a 2-sentence summary at the end in XML tags:
 
 ---
 
-## Step 3 — Parse each agent response
+## Step 4 — Parse each agent response
 
-Once all four agents have replied, extract from each:
+Once all agents have replied, extract from each:
 
 | Field | How to extract |
 | :--- | :--- |
@@ -125,35 +133,28 @@ If a field is absent, leave it blank — do not fabricate values.
 
 ---
 
-## Step 4 — Synthesize
+## Step 5 — Synthesize
 
-You are the judge. Using the four parsed responses, perform synthesis now by applying the following task:
+You are the judge. Using all parsed responses, perform synthesis now:
 
 1. Identify every point where models agree — these are consensus points.
 2. Identify every point of disagreement. For each, note which models disagree and what position each holds.
 3. Produce a synthesized answer that includes all consensus points, resolves conflicts by evaluating each position on its merits, and incorporates complementary insights.
 4. Write your reasoning: explain how you weighted conflicting views and why.
-5. Assign an overall confidence score (0–100) that reflects both model confidence levels and the degree of agreement.
+5. Assign an overall confidence score (0–100) reflecting both model confidence levels and degree of agreement.
 6. Assign a consensus level — use exactly one of: `Strong Consensus`, `Moderate Consensus`, `Weak Consensus`, `Conflicted`.
-
-For disagreements, use this format:
-```
-- TOPIC: [description of the disagreement]
-  MODEL: [model name] - [their position]
-  MODEL: [model name] - [their position]
-```
 
 ---
 
-## Step 5 — Render the report
+## Step 6 — Render the report
 
-Output the final report using this exact markdown structure. Fill every section; omit a section only if it genuinely has no content (e.g. no disagreements).
+Output the final report using this structure. Use the actual model value from each agent's config as its display name. `{N}` is the number of panel agents discovered in Step 1.
 
 ```markdown
 # Consensus Result
 
 **Generated:** {current date and time}
-**Models Consulted:** 4
+**Models Consulted:** {N}
 **Consensus Level:** {consensus_level}
 **Overall Confidence:** {confidence}%
 
@@ -170,17 +171,15 @@ Output the final report using this exact markdown structure. Fill every section;
 ## Points of Agreement
 
 - {point}
-- {point}
 
 ## Points of Disagreement
 
 ### {topic}
-- **{model name}:** {position}
-- **{model name}:** {position}
+- **{model}:** {position}
 
 ## Individual Model Responses
 
-### grok-4.3
+### {model value from agent config}
 
 **Confidence:** {confidence}%
 
@@ -192,39 +191,7 @@ Output the final report using this exact markdown structure. Fill every section;
 
 ---
 
-### gemini-3.1-pro-preview
-
-**Confidence:** {confidence}%
-
-**Answer:**
-{answer}
-
-**Reasoning:**
-{reasoning}
-
----
-
-### claude-sonnet-4.6
-
-**Confidence:** {confidence}%
-
-**Answer:**
-{answer}
-
-**Reasoning:**
-{reasoning}
-
----
-
-### gpt-5.5
-
-**Confidence:** {confidence}%
-
-**Answer:**
-{answer}
-
-**Reasoning:**
-{reasoning}
+{repeat for each panel agent}
 ```
 
 Output nothing outside this structure.
