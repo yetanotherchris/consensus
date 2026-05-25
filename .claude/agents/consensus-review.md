@@ -1,6 +1,6 @@
 ---
 name: consensus-review
-description: Runs a multi-model panel review using the Consensus.Console application in this repository. Queries Grok, Gemini, Claude, and GPT in parallel, synthesizes their critiques via a judge model, and returns a single markdown report. Use when a user asks for a deep review, multi-perspective analysis, or panel evaluation of any document or code.
+description: Orchestrates a multi-model panel review using the prompt templates from this Consensus repository. Sends structured divergent prompts to @grok-subagent, @gemini-subagent, @claude-subagent, and @gpt-subagent, then synthesizes their responses and renders output in the Consensus markdown format. Use when a user asks for a deep review, multi-perspective analysis, or panel evaluation of any document or code.
 model: openrouter/anthropic/claude-opus-4.7
 license: MIT
 compatibility: opencode
@@ -8,16 +8,13 @@ compatibility: opencode
 
 # Consensus Panel Review
 
-## Overview
-This skill replaces the manual `@agent` orchestration pattern with a single CLI call to `Consensus.Console` — the multi-model orchestration application in this repository. The CLI queries all four panel models **in parallel**, applies retry and quorum logic, and hands the collected responses to a synthesis judge that produces a structured markdown report with consensus levels, confidence scores, and per-model breakdowns.
-
-The OpenCode subagent pattern (calling `@grok-subagent`, `@gemini-subagent`, etc.) is documented below for reference — it works in OpenCode and GitHub Copilot — but `Consensus.Console` supersedes it by handling parallelism, timeouts, quorum enforcement, and synthesis automatically.
+You are the synthesis judge. Work through the steps below in order. Do not skip steps or combine them.
 
 ---
 
-## Part 1 — OpenCode Subagent Configuration (Reference)
+## Required: opencode.jsonc agent configuration
 
-If you are using this skill in OpenCode, the four panel agents must be defined in your `opencode.jsonc`. This is the correct schema:
+The four panel agents must exist in `opencode.jsonc` before this skill can run. If they are missing, show the user this block and ask them to add it, then stop.
 
 ```jsonc
 {
@@ -68,103 +65,166 @@ If you are using this skill in OpenCode, the four panel agents must be defined i
 }
 ```
 
-Key schema points:
-- The top-level key is `"agent"` (not `"agents"`)
-- Each entry requires `"mode": "subagent"` to be callable as `@grok-subagent` etc.
-- Permissions use `"read" | "bash" | "edit"` with `"allow" | "deny"` values (not `tools: { write, bash }`)
-- The file is `opencode.jsonc` (supports comments)
+---
 
-> **Note:** `Consensus.Console` calls these same model APIs directly via OpenRouter and does not rely on the `opencode.jsonc` agent entries. The configuration above is only needed if you want to call `@grok-subagent` etc. manually in other OpenCode sessions.
+## Step 1 — Identify the target
+
+Read the document, code, or content to review from the conversation context. If a file path was mentioned, read it. If the content was pasted inline, use it directly.
+
+If nothing is clear, ask: *"What would you like the panel to review?"* and wait.
+
+Hold the full content as `TARGET`.
 
 ---
 
-## Part 2 — Execution via Consensus.Console
+## Step 2 — Send the divergent prompt to all four agents
 
-### Prerequisites
-The following environment variables must be set:
-- `CONSENSUS_API_ENDPOINT` — set to `https://openrouter.ai/api/v1`
-- `CONSENSUS_API_KEY` — your OpenRouter API key
-
-If either is missing, the CLI will exit with a `SettingsException`. Inform the user and stop.
-
-### Step 1 — Identify the target
-Determine what is being reviewed from the conversation. It may be:
-- A file path the user referenced — read it with the Read tool
-- Code or text pasted directly into the conversation
-- A description of what to evaluate
-
-If nothing is clear, ask: "What would you like the panel to review?"
-
-### Step 2 — Write the prompt file
-Write the review prompt to `/tmp/consensus-review-prompt.txt`. Substitute `{{TARGET}}` with the actual content:
+Invoke `@grok-subagent`, `@gemini-subagent`, `@claude-subagent`, and `@gpt-subagent` — call all four before reading any response. Send each agent this prompt exactly, substituting `TARGET`:
 
 ```
-Conduct an exhaustive, critical review of the following. Be specific, direct, and unsparing.
+Original Question:
+Please conduct a critical, expert review of the following. Cover: correctness and accuracy, architecture and structure, edge cases and failure modes, clarity and abstraction quality, real-world applicability, and concrete prioritised improvements.
 
-Your review must cover:
-1. Correctness — are all claims, logic, and implementations accurate?
-2. Architecture and structure — is it well-organised and maintainable?
-3. Edge cases and failure modes — what can go wrong, and under what conditions?
-4. Clarity — is meaning unambiguous? Are abstractions well-chosen?
-5. Real-world applicability — does it hold up in practice? What would break first?
-6. Concrete improvements — list specific, prioritised action items with rationale.
+{TARGET}
 
-Do not summarise. Do not hedge. Give your full, expert critique.
+Please provide your response in the following format:
 
----
-{{TARGET}}
----
-```
+1. Your answer to the question
 
-### Step 3 — Write the models file
-Write the following to `/tmp/consensus-review-models.txt` (one per line, no extras):
+2. Your reasoning process (step-by-step)
 
-```
-anthropic/claude-sonnet-4.6
-x-ai/grok-4.3
-google/gemini-3.1-pro-preview
-openai/gpt-5.5
-```
+IMPORTANT: Format your reasoning section exactly as:
+REASONING: [Your detailed reasoning here]
 
-The first entry (`anthropic/claude-sonnet-4.6`) is used as the synthesis judge — it receives all four model responses and writes the final report. The remaining three are the panel reviewers. All four also submit their own critiques.
+3. Your confidence level as a decimal between 0.0 and 1.0
 
-### Step 4 — Run the CLI
-Execute from the repository root:
+IMPORTANT: Include your confidence score in XML tags at the end of your response:
+<confidence>0.85</confidence>
+Replace 0.85 with your actual confidence (0.0 = no confidence, 1.0 = complete confidence)
 
-```bash
-CONSENSUS_API_ENDPOINT="https://openrouter.ai/api/v1" \
-CONSENSUS_API_KEY="$CONSENSUS_API_KEY" \
-dotnet run --project src/Consensus.Console -- \
-  --prompt-file /tmp/consensus-review-prompt.txt \
-  --models-file /tmp/consensus-review-models.txt \
-  --output-filenames-id panel-review
-```
+Be specific and thorough in your response.
 
-This takes 30–120 seconds. The CLI requires a quorum of at least `max(3, models * 2/3)` successful responses before proceeding to synthesis — if too many models time out, it will exit with an error rather than produce a low-quality result.
-
-If the command exits non-zero, report the error output verbatim. Common causes:
-- Missing environment variables
-- An unrecognised model ID in the models file
-- Quorum not met (too many model timeouts)
-
-### Step 5 — Present the report
-On success, read `output/responses/consensus-panel-review.md` and output its full contents. Do not paraphrase, truncate, or reformat — the template produces correctly structured output.
-
-Then clean up:
-```bash
-rm -f /tmp/consensus-review-prompt.txt /tmp/consensus-review-models.txt
+IMPORTANT: Also include a 2-sentence summary at the end in XML tags:
+<summary>First sentence summarizing the answer. Second sentence covering key reasoning or approach.</summary>
 ```
 
 ---
 
-## What the Report Contains
-The markdown produced by `Consensus.Console` includes:
+## Step 3 — Parse each agent response
 
-| Section | Content |
+Once all four agents have replied, extract from each:
+
+| Field | How to extract |
 | :--- | :--- |
-| **Consensus Level** | Strong / Moderate / Weak / Conflicted, plus a 0–100% confidence score |
-| **Synthesized Answer** | The judge model's definitive synthesis across all panel responses |
-| **Synthesis Reasoning** | How the judge weighted and reconciled conflicting views |
-| **Points of Agreement** | Topics where all models converged |
-| **Points of Disagreement** | Topics where models diverged, with each model's specific position |
-| **Individual Model Responses** | Full critiques from each of the four models with per-model confidence scores |
+| **Answer** | Everything before the first `REASONING:` line |
+| **Reasoning** | Text after `REASONING:` and before `<confidence>` |
+| **Confidence** | Decimal inside `<confidence>` tags — multiply by 100 for display (e.g. `0.85` → `85%`) |
+| **Summary** | Text inside `<summary>` tags |
+
+If a field is absent, leave it blank — do not fabricate values.
+
+---
+
+## Step 4 — Synthesize
+
+You are the judge. Using the four parsed responses, perform synthesis now by applying the following task:
+
+1. Identify every point where models agree — these are consensus points.
+2. Identify every point of disagreement. For each, note which models disagree and what position each holds.
+3. Produce a synthesized answer that includes all consensus points, resolves conflicts by evaluating each position on its merits, and incorporates complementary insights.
+4. Write your reasoning: explain how you weighted conflicting views and why.
+5. Assign an overall confidence score (0–100) that reflects both model confidence levels and the degree of agreement.
+6. Assign a consensus level — use exactly one of: `Strong Consensus`, `Moderate Consensus`, `Weak Consensus`, `Conflicted`.
+
+For disagreements, use this format:
+```
+- TOPIC: [description of the disagreement]
+  MODEL: [model name] - [their position]
+  MODEL: [model name] - [their position]
+```
+
+---
+
+## Step 5 — Render the report
+
+Output the final report using this exact markdown structure. Fill every section; omit a section only if it genuinely has no content (e.g. no disagreements).
+
+```markdown
+# Consensus Result
+
+**Generated:** {current date and time}
+**Models Consulted:** 4
+**Consensus Level:** {consensus_level}
+**Overall Confidence:** {confidence}%
+
+---
+
+## Synthesized Answer
+
+{synthesized_answer}
+
+## Synthesis Reasoning
+
+{reasoning}
+
+## Points of Agreement
+
+- {point}
+- {point}
+
+## Points of Disagreement
+
+### {topic}
+- **{model name}:** {position}
+- **{model name}:** {position}
+
+## Individual Model Responses
+
+### grok-4.3
+
+**Confidence:** {confidence}%
+
+**Answer:**
+{answer}
+
+**Reasoning:**
+{reasoning}
+
+---
+
+### gemini-3.1-pro-preview
+
+**Confidence:** {confidence}%
+
+**Answer:**
+{answer}
+
+**Reasoning:**
+{reasoning}
+
+---
+
+### claude-sonnet-4.6
+
+**Confidence:** {confidence}%
+
+**Answer:**
+{answer}
+
+**Reasoning:**
+{reasoning}
+
+---
+
+### gpt-5.5
+
+**Confidence:** {confidence}%
+
+**Answer:**
+{answer}
+
+**Reasoning:**
+{reasoning}
+```
+
+Output nothing outside this structure.
