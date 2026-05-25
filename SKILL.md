@@ -3,7 +3,6 @@ name: consensus-review
 description: Orchestrates a multi-model panel review using the prompt templates from this Consensus repository. Discovers all agents prefixed with "consensus-subagent-" from opencode.jsonc, sends structured divergent prompts to each, synthesizes their responses, and renders output in the Consensus markdown format. Use when a user asks for a deep review, multi-perspective analysis, or panel evaluation of any document or code.
 model: openrouter/anthropic/claude-opus-4.7
 license: MIT
-compatibility: opencode
 ---
 
 # Consensus Panel Review
