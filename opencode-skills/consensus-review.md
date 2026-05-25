@@ -96,7 +96,7 @@ Hold the full content as `TARGET`.
 
 ## Step 3 — Send the divergent prompt to all panel agents
 
-Invoke every discovered `consensus-subagent-*` agent — call all of them before reading any response. Send each agent this prompt exactly, substituting `TARGET`:
+Invoke every discovered `consensus-subagent-*` agent — call all of them before reading any response. Send each agent this prompt exactly, replacing the literal text `{TARGET}` with the full content identified in Step 2:
 
 ```
 Original Question:
