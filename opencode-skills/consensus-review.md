@@ -14,7 +14,16 @@ You are the synthesis judge. Work through the steps below in order. Do not skip 
 
 ## Step 1 — Discover panel agents
 
-Read `opencode.jsonc` from the project root (or user-level config if no project-level file exists). Collect every key under `"agent"` whose name starts with `consensus-subagent-`. These are your panel members.
+Search for `opencode.jsonc` (or `opencode.json`) in the following locations, in order. Read every file that exists and merge their `"agent"` sections — project-level entries override global ones.
+
+| Scope | macOS / Linux | Windows |
+| :--- | :--- | :--- |
+| Project | `./opencode.jsonc` | `.\opencode.jsonc` |
+| User (global) | `~/.config/opencode/opencode.jsonc` | `%ProgramData%\opencode\opencode.jsonc` or `~/config/opencode/opencode.jsonc` |
+
+> **Windows note:** the docs list `%ProgramData%\opencode` but the file has also been observed at `~/config/opencode`. Check both locations if the first is empty.
+
+Collect every key under `"agent"` whose name starts with `consensus-subagent-`. These are your panel members.
 
 For each discovered agent, record:
 - **Agent key** — the full key name (e.g. `consensus-subagent-grok`)
