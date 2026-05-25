@@ -19,7 +19,7 @@ The four panel agents must exist in `opencode.jsonc` before this skill can run. 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "shell": "pwsh",
+  // "shell": "pwsh",   // Windows only — omit this line on macOS/Linux (defaults to your system shell)
   "agent": {
     "grok-subagent": {
       "description": "Grok LLM subagent for analysis and queries",
