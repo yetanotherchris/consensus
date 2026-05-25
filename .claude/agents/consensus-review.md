@@ -11,38 +11,70 @@ compatibility: opencode
 ## Overview
 This skill replaces the manual `@agent` orchestration pattern with a single CLI call to `Consensus.Console` — the multi-model orchestration application in this repository. The CLI queries all four panel models **in parallel**, applies retry and quorum logic, and hands the collected responses to a synthesis judge that produces a structured markdown report with consensus levels, confidence scores, and per-model breakdowns.
 
-The OpenCode subagent pattern (calling `@grok-sub`, `@gemini-sub`, etc.) is documented below for reference — it works in OpenCode and GitHub Copilot — but `Consensus.Console` supersedes it by handling parallelism, timeouts, quorum enforcement, and synthesis automatically.
+The OpenCode subagent pattern (calling `@grok-subagent`, `@gemini-subagent`, etc.) is documented below for reference — it works in OpenCode and GitHub Copilot — but `Consensus.Console` supersedes it by handling parallelism, timeouts, quorum enforcement, and synthesis automatically.
 
 ---
 
 ## Part 1 — OpenCode Subagent Configuration (Reference)
 
-If you are using this skill in OpenCode and want the subagents available for other tasks, add the following to your `opencode.json`. These agent definitions are what the manual orchestration pattern relies on:
+If you are using this skill in OpenCode, the four panel agents must be defined in your `opencode.jsonc`. This is the correct schema:
 
-```json
+```jsonc
 {
-  "agents": {
-    "grok-sub": {
+  "$schema": "https://opencode.ai/config.json",
+  "shell": "pwsh",
+  "agent": {
+    "grok-subagent": {
+      "description": "Grok LLM subagent for analysis and queries",
+      "mode": "subagent",
       "model": "openrouter/x-ai/grok-4.3",
-      "tools": { "write": false, "bash": false }
+      "permission": {
+        "read": "allow",
+        "bash": "deny",
+        "edit": "deny"
+      }
     },
-    "gemini-sub": {
+    "gemini-subagent": {
+      "description": "Gemini LLM subagent for analysis and queries",
+      "mode": "subagent",
       "model": "openrouter/google/gemini-3.1-pro-preview",
-      "tools": { "write": false, "bash": false }
+      "permission": {
+        "read": "allow",
+        "bash": "deny",
+        "edit": "deny"
+      }
     },
-    "claude-sub": {
+    "claude-subagent": {
+      "description": "Claude LLM subagent for analysis and queries",
+      "mode": "subagent",
       "model": "openrouter/anthropic/claude-sonnet-4.6",
-      "tools": { "write": false, "bash": false }
+      "permission": {
+        "read": "allow",
+        "bash": "deny",
+        "edit": "deny"
+      }
     },
-    "gpt-sub": {
+    "gpt-subagent": {
+      "description": "GPT LLM subagent for analysis and queries",
+      "mode": "subagent",
       "model": "openrouter/openai/gpt-5.5",
-      "tools": { "write": false, "bash": false }
+      "permission": {
+        "read": "allow",
+        "bash": "deny",
+        "edit": "deny"
+      }
     }
   }
 }
 ```
 
-> **Note:** `Consensus.Console` calls these same model APIs directly via OpenRouter. You do **not** need the `opencode.json` entries for this skill to work — they are only needed if you want to invoke those agents manually elsewhere in OpenCode.
+Key schema points:
+- The top-level key is `"agent"` (not `"agents"`)
+- Each entry requires `"mode": "subagent"` to be callable as `@grok-subagent` etc.
+- Permissions use `"read" | "bash" | "edit"` with `"allow" | "deny"` values (not `tools: { write, bash }`)
+- The file is `opencode.jsonc` (supports comments)
+
+> **Note:** `Consensus.Console` calls these same model APIs directly via OpenRouter and does not rely on the `opencode.jsonc` agent entries. The configuration above is only needed if you want to call `@grok-subagent` etc. manually in other OpenCode sessions.
 
 ---
 
