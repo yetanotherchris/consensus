@@ -53,6 +53,12 @@ services:
 [Example prompt and model costs](./prompt-model-costs.md)
 
 
+## OpenCode Skill
+
+An [OpenCode](https://opencode.ai) skill is available in [`opencode-skills/consensus-review.md`](../opencode-skills/consensus-review.md). It replicates the consensus workflow — divergent prompts to a panel, followed by judge synthesis — entirely within OpenCode using its native `@subagent` mechanism, with no server required.
+
+To use it, define agents prefixed `consensus-subagent-` in your `opencode.jsonc` (the skill file contains a ready-to-use example config). Any models supported by your OpenRouter key can be used; the skill discovers the panel dynamically at runtime.
+
 ## Local development
 
 - Install .NET 9 and NodeJS
