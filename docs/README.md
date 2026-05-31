@@ -9,6 +9,8 @@ The app builds prompts for building a consensus using [prompt templates](https:/
 ## Screenshot
 <img width="773" height="331" alt="image" src="https://github.com/user-attachments/assets/2dc34183-d185-4294-b4d5-f9125fab44ea" />
 
+> Who would win a fight, a crocodile or a bear?
+
 ## Quickstart
 
 ```
