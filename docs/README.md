@@ -1,6 +1,8 @@
 # consensus
 consensus is a web application (+command line tool) to ask multiple models a question, and provide a synthesized consensus answer using one model as the judge.
 
+**June 2026 update** - OpenRouter now has the functionality of consensus built in with their [Fusion model](https://openrouter.ai/openrouter/fusion), that is a better choice going forward.
+
 ## Overview
 ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.  
 
