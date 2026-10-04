@@ -17,13 +17,25 @@ The default `Dockerfile` builds a production-ready image that includes:
 docker build -t consensus .
 ```
 
-### Run with Required Environment Variables
+### Build the Rate-Limited Demo Image
+
+The demo image is tagged `consensus:demosite`. Nginx proxies the application and permits each client IP one `POST /api/consensus/start` request every 20 seconds. Requests over the limit receive HTTP `429`; status and log polling are not limited.
+
+```bash
+docker build -f demosite/Dockerfile -t consensus:demosite .
+
+# Or build and run it with Docker Compose on port 8586.
+docker compose --env-file .env -f demosite/docker-compose.yml up -d --build
+```
+
+Set `DEMOSITE_PORT` to publish a different host port. The demo image uses the same free OpenRouter model defaults as the standard image and requires `Consensus__ApiKey`.
+
+### Run with an API Key
 
 ```bash
 # Linux/macOS
 docker run -d \
   -p 8080:8080 \
-  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
   -e Consensus__ApiKey="your-api-key-here" \
   -v $(pwd)/output:/app/output \
   --name consensus \
@@ -32,7 +44,6 @@ docker run -d \
 # PowerShell (Windows)
 docker run -d `
   -p 8080:8080 `
-  -e Consensus__ApiEndpoint="https://openrouter.ai/api/v1" `
   -e Consensus__ApiKey="your-api-key-here" `
   -v "${PWD}/output:/app/output" `
   --name consensus `
@@ -71,7 +82,6 @@ docker exec -it consensus /bin/bash
 
 ### Required
 
-- `Consensus__ApiEndpoint` - The AI API endpoint (e.g., `https://openrouter.ai/api/v1`)
 - `Consensus__ApiKey` - Your API key for the endpoint
 
 ### Optional
@@ -80,6 +90,8 @@ docker exec -it consensus /bin/bash
 - `Consensus__AgentTimeoutSeconds` - Timeout for AI agent responses in seconds (default: `120`)
 - `Consensus__IncludeIndividualResponses` - Include individual model responses (default: `true`)
 - `OutputDirectory` - Directory for output files (default: `/app/output`)
+- `Consensus__ApiEndpoint` - AI API endpoint (default: `https://openrouter.ai/api/v1`)
+- `Consensus__Models__<index>` - Override a default free OpenRouter model. The image queries the ranked free-model panel by default.
 
 ### Passing Model Arrays
 

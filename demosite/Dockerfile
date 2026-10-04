@@ -29,12 +29,19 @@ RUN dotnet publish src/Consensus.Api/Consensus.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-COPY --from=backend-build /app/publish .
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /app/output/logs /app/output/responses
+COPY --from=backend-build /app/publish .
+COPY demosite/nginx.conf /etc/nginx/nginx.conf
+COPY demosite/start.sh /app/start.sh
+
+RUN mkdir -p /app/output/logs /app/output/responses \
+    && chmod +x /app/start.sh
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_URLS=http://127.0.0.1:8081 \
     Consensus__ApiEndpoint="https://openrouter.ai/api/v1" \
     Consensus__ApiKey="" \
     Consensus__Domain="General" \
@@ -60,4 +67,4 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "Consensus.Api.dll"]
+ENTRYPOINT ["/app/start.sh"]

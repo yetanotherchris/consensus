@@ -12,16 +12,25 @@ services:
       - "8585:8080"
     # Set an env var of CONSENSUS_APIKEY with your key value first.
     environment:
-      - Consensus__ApiEndpoint=${Consensus__ApiEndpoint}
+      - Consensus__ApiEndpoint=${Consensus__ApiEndpoint:-https://openrouter.ai/api/v1}
       - Consensus__ApiKey=${Consensus__ApiKey}
       - Consensus__CleanupCrontab=${Consensus__CleanupCrontab}
-      - Consensus__Models__0=${Consensus__Models__0}
-      - Consensus__Models__1=${Consensus__Models__1}
-      - Consensus__Models__2=${Consensus__Models__2}
-      - Consensus__Models__3=${Consensus__Models__3}
-      - Consensus__Models__4=${Consensus__Models__4}
-      - Consensus__Models__5=${Consensus__Models__5}
-      - Consensus__Models__6=${Consensus__Models__6}
+      - Consensus__Models__0=${Consensus__Models__0:-nvidia/nemotron-3-ultra-550b-a55b:free}
+      - Consensus__Models__1=${Consensus__Models__1:-openrouter/free}
+      - Consensus__Models__2=${Consensus__Models__2:-nvidia/nemotron-3-super-120b-a12b:free}
+      - Consensus__Models__3=${Consensus__Models__3:-qwen/qwen3.8-27b:free}
+      - Consensus__Models__4=${Consensus__Models__4:-google/gemma-4-31b-it:free}
+      - Consensus__Models__5=${Consensus__Models__5:-thinkingmachines/inkling:free}
+      - Consensus__Models__6=${Consensus__Models__6:-inclusionai/ling-3.1-flash}
+      - Consensus__Models__7=${Consensus__Models__7:-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free}
+      - Consensus__Models__8=${Consensus__Models__8:-google/gemma-4-26b-a4b-it:free}
+      - Consensus__Models__9=${Consensus__Models__9:-thinkingmachines/inkling-small:free}
+      - Consensus__Models__10=${Consensus__Models__10:-apodex/apodex-1.1-mini:free}
+      - Consensus__Models__11=${Consensus__Models__11:-stealth/space-bunny-alpha}
+      - Consensus__Models__12=${Consensus__Models__12:-poolside/laguna-s-2.1:free}
+      - Consensus__Models__13=${Consensus__Models__13:-cohere/north-mini-code:free}
+      - Consensus__Models__14=${Consensus__Models__14:-poolside/laguna-xs-2.1:free}
+      - Consensus__Models__15=${Consensus__Models__15:-liquid/lfm-2.5-2.6b:free}
     volumes:
       - ./output:/app/output
     restart: unless-stopped
