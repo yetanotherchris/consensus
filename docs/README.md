@@ -1,8 +1,6 @@
 # consensus
 consensus is a web application (+command line tool) to ask multiple models a question, and provide a synthesized consensus answer using one model as the judge.
 
-**June 2026 update** - OpenRouter now has the functionality of consensus built in with their [Fusion model](https://openrouter.ai/openrouter/fusion), that is a better choice going forward.
-
 ## Overview
 ReactJS and Tailwind for the frontend, .NET 9 with Microsoft Agent Framework and Quartz for the backend/API.  
 
@@ -74,3 +72,8 @@ To use it, define agents prefixed `consensus-subagent-` in your `opencode.jsonc`
 - `cd .\src\Consensus.Api\` and `dotnet run`
 - _(New terminal)_ `cd .\src\Consensus.Web\` and `npm run dev`
 - Go to `http://localhost:5173/` in a browser (or the port Vite provides for `npm run dev`)
+
+## Updates
+
+October 2026 - a demo site is now available via Google Cloud Run (rate throttled).  
+June 2026 - OpenRouter has the functionality of consensus built in with their [Fusion model](https://openrouter.ai/openrouter/fusion)  
