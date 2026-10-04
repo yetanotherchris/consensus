@@ -2,6 +2,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
+using OpenAI.Chat;
 using System.ClientModel;
 using System.Text.RegularExpressions;
 using Consensus.Channels;
@@ -16,7 +17,7 @@ public class AgentService : IAgentService
 {
     private readonly ConsensusRunTracker _runTracker;
     private readonly ILogger<AgentService> _logger;
-    private readonly Dictionary<string, (AIAgent agent, AgentThread thread)> _modelContexts = new();
+    private readonly Dictionary<string, (ChatClientAgent agent, AgentSession session)> _modelContexts = new();
 
     public AgentService(ConsensusRunTracker runTracker, ILogger<AgentService> logger)
     {
@@ -43,10 +44,10 @@ public class AgentService : IAgentService
                     clientOptions
                 );
                 var chatClient = openAIClient.GetChatClient(model);
-                AIAgent agent = chatClient.CreateAIAgent();
-                AgentThread thread = agent.GetNewThread();
+                ChatClientAgent agent = chatClient.AsAIAgent();
+                AgentSession session = await agent.CreateSessionAsync();
                 
-                _modelContexts[model] = (agent, thread);
+                _modelContexts[model] = (agent, session);
             }
             catch (Exception ex)
             {
@@ -69,7 +70,7 @@ public class AgentService : IAgentService
             throw new InvalidOperationException(error);
         }
 
-        var (agent, thread) = context;
+        var (agent, session) = context;
         var startTime = DateTime.UtcNow;
         
         try
@@ -79,7 +80,7 @@ public class AgentService : IAgentService
             {
                 try
                 {
-                    var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+                    var response = await agent.RunAsync(prompt, session, cancellationToken: cancellationToken);
                     return response.Text ?? string.Empty;
                 }
                 catch (ArgumentException ex) when (ex.Message.Contains("Unknown ChatFinishReason"))
@@ -273,13 +274,13 @@ public class AgentService : IAgentService
 
                     // Get the chat client and create an AI Agent using the Microsoft Agent Framework
                     var chatClient = openAIClient.GetChatClient(model);
-                    AIAgent agent = chatClient.CreateAIAgent();
+                    ChatClientAgent agent = chatClient.AsAIAgent();
 
-                    // Use AgentThread for conversation state
-                    AgentThread thread = agent.GetNewThread();
+                    // Use AgentSession for conversation state
+                    AgentSession session = await agent.CreateSessionAsync();
 
                     // Run the agent with the prompt
-                    var response = await agent.RunAsync(prompt, thread, cancellationToken: cancellationToken);
+                    var response = await agent.RunAsync(prompt, session, cancellationToken: cancellationToken);
 
                     return response.Text ?? string.Empty;
                 }

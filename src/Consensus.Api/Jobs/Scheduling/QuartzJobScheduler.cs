@@ -34,7 +34,7 @@ public class QuartzJobScheduler : IJobScheduler
         var jobKey = new JobKey($"consensus-{runId}", "consensus-jobs");
 
         // Check if job already exists
-        if (await scheduler.CheckExists(jobKey))
+        if (await scheduler.Exists(jobKey))
         {
             _logger.LogWarning("Job with runId {RunId} already exists", runId);
             return false;
@@ -75,7 +75,7 @@ public class QuartzJobScheduler : IJobScheduler
         var jobKey = new JobKey($"consensus-{runId}", "consensus-jobs");
         
         // Check if job exists
-        if (!await scheduler.CheckExists(jobKey))
+        if (!await scheduler.Exists(jobKey))
         {
             return null;
         }
@@ -98,12 +98,12 @@ public class QuartzJobScheduler : IJobScheduler
         // Get execution times from job data map
         if (jobDetail.JobDataMap.ContainsKey("startedAt"))
         {
-            startedAt = jobDetail.JobDataMap.GetDateTime("startedAt");
+            startedAt = jobDetail.JobDataMap.Get<DateTime>("startedAt");
         }
         
         if (jobDetail.JobDataMap.ContainsKey("finishedAt"))
         {
-            finishedAt = jobDetail.JobDataMap.GetDateTime("finishedAt");
+            finishedAt = jobDetail.JobDataMap.Get<DateTime>("finishedAt");
         }
         
         if (trigger != null)
@@ -149,7 +149,7 @@ public class QuartzJobScheduler : IJobScheduler
             RunId = runId,
             Status = status,
             CreatedAt = jobDetail.JobDataMap.ContainsKey("createdAt") 
-                ? jobDetail.JobDataMap.GetDateTime("createdAt") 
+                ? jobDetail.JobDataMap.Get<DateTime>("createdAt")
                 : DateTime.UtcNow,
             StartedAt = startedAt,
             FinishedAt = finishedAt
@@ -160,6 +160,6 @@ public class QuartzJobScheduler : IJobScheduler
     {
         var scheduler = await _schedulerFactory.GetScheduler();
         var jobKey = new JobKey($"consensus-{runId}", "consensus-jobs");
-        return await scheduler.CheckExists(jobKey);
+        return await scheduler.Exists(jobKey);
     }
 }

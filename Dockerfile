@@ -7,7 +7,7 @@ RUN npm ci
 COPY src/Consensus.Web/ ./
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /src
 
 COPY consensus.sln .
@@ -26,7 +26,7 @@ RUN dotnet publish src/Consensus.Api/Consensus.Api.csproj \
     -o /app/publish \
     --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 COPY --from=backend-build /app/publish .
