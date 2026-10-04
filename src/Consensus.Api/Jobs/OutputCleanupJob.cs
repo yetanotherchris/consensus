@@ -19,7 +19,7 @@ public class OutputCleanupJob : IJob
             ?? Path.Combine(Directory.GetCurrentDirectory(), "output");
     }
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("OutputCleanupJob started at {Time}", DateTime.UtcNow);
 

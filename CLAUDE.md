@@ -209,7 +209,7 @@ The system uses Microsoft Agents AI framework (`Microsoft.Agents.AI.OpenAI`) for
 
 ## Target Framework
 
-All projects target **.NET 9.0** (`net9.0`).
+All projects target **.NET 10.0** (`net10.0`).
 
 ## Redis Integration
 

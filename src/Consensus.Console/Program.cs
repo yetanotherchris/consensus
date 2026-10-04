@@ -11,40 +11,38 @@ class Program
     static async Task<int> Main(string[] args)
     {
         // Define command-line options
-        var promptFileOption = new Option<string>(
-            name: "--prompt-file",
-            description: "Path to the prompt file")
+        var promptFileOption = new Option<string>("--prompt-file")
         {
-            IsRequired = true
+            Description = "Path to the prompt file",
+            Required = true
         };
 
-        var modelsFileOption = new Option<string>(
-            name: "--models-file",
-            description: "Path to the models file")
+        var modelsFileOption = new Option<string>("--models-file")
         {
-            IsRequired = true
+            Description = "Path to the models file",
+            Required = true
         };
 
-        var outputFilenamesIdOption = new Option<string?>(
-            name: "--output-filenames-id",
-            description: "Optional unique ID for output filenames (replaces timestamp)")
+        var outputFilenamesIdOption = new Option<string?>("--output-filenames-id")
         {
-            IsRequired = false
+            Description = "Optional unique ID for output filenames (replaces timestamp)"
         };
 
         // Create root command
-        var rootCommand = new RootCommand("Consensus Agent - Build consensus from multiple AI models")
-        {
-            promptFileOption,
-            modelsFileOption,
-            outputFilenamesIdOption
-        };
+        var rootCommand = new RootCommand("Consensus Agent - Build consensus from multiple AI models");
+        rootCommand.Options.Add(promptFileOption);
+        rootCommand.Options.Add(modelsFileOption);
+        rootCommand.Options.Add(outputFilenamesIdOption);
 
         // Set command handler
-        rootCommand.SetHandler(async (promptFile, modelsFile, outputFilenamesId) =>
+        rootCommand.SetAction(async parseResult =>
         {
             try
             {
+                var promptFile = parseResult.GetValue(promptFileOption)!;
+                var modelsFile = parseResult.GetValue(modelsFileOption)!;
+                var outputFilenamesId = parseResult.GetValue(outputFilenamesIdOption);
+
                 // Load and validate settings from arguments and environment
                 var settings = ConsensusAgentSettings.CreateFromArgsAndEnvironment(promptFile, modelsFile, outputFilenamesId);
 
@@ -103,9 +101,9 @@ class Program
                 Console.WriteLine($"Error: {ex.Message}");
                 Environment.Exit(1);
             }
-        }, promptFileOption, modelsFileOption, outputFilenamesIdOption);
+        });
 
         // Execute command
-        return await rootCommand.InvokeAsync(args);
+        return await rootCommand.Parse(args).InvokeAsync();
     }
 }

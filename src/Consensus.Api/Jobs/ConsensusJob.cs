@@ -19,11 +19,11 @@ public class ConsensusJob : IJob
         _orchestrator = orchestrator;
     }
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken = default)
     {
         var runId = context.JobDetail.JobDataMap.GetString("runId");
         var prompt = context.JobDetail.JobDataMap.GetString("prompt");
-        var models = context.JobDetail.JobDataMap.Get("models") as string[];
+        var models = context.JobDetail.JobDataMap.Get<string[]>("models");
 
         if (string.IsNullOrEmpty(runId))
         {
@@ -47,7 +47,7 @@ public class ConsensusJob : IJob
             runId, models.Length, string.Join(", ", models));
 
         // Store start time in job data map
-        context.JobDetail.JobDataMap.Put("startedAt", DateTime.UtcNow);
+        context.JobDetail.JobDataMap["startedAt"] = DateTime.UtcNow;
 
         try
         {
@@ -69,7 +69,7 @@ public class ConsensusJob : IJob
         finally
         {
             // Store finish time in job data map
-            context.JobDetail.JobDataMap.Put("finishedAt", DateTime.UtcNow);
+            context.JobDetail.JobDataMap["finishedAt"] = DateTime.UtcNow;
         }
     }
 }
