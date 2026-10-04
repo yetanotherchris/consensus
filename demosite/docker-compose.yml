@@ -1,0 +1,14 @@
+services:
+  consensus-demosite:
+    build:
+      context: ..
+      dockerfile: demosite/Dockerfile
+    image: consensus:demosite
+    container_name: consensus-demosite
+    ports:
+      - "${DEMOSITE_PORT:-8586}:8080"
+    environment:
+      - Consensus__ApiKey=${Consensus__ApiKey}
+    volumes:
+      - ../output/demosite:/app/output
+    restart: unless-stopped
