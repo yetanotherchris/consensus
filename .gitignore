@@ -394,3 +394,5 @@ test-prompt*.txt
 src/Consensus.Api/.claude/settings.local.json
 
 .env
+
+.opencode/
