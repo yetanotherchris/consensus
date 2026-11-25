@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Consensus is a .NET 9.0 application that queries multiple AI models with the same prompt and synthesizes a consensus answer. It supports both CLI and web API modes with a React frontend.
+Consensus is a .NET 11 application that queries multiple AI models with the same prompt and synthesizes a consensus answer. It supports both CLI and web API modes with a React frontend.
 
 ## Project Structure
 
@@ -209,7 +209,7 @@ The system uses Microsoft Agents AI framework (`Microsoft.Agents.AI.OpenAI`) for
 
 ## Target Framework
 
-All projects target **.NET 10.0** (`net10.0`).
+All projects target **.NET 11.0** (`net11.0`).
 
 ## Redis Integration
 
